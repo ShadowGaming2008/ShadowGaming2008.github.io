@@ -1573,6 +1573,12 @@ function subscribeMyDms() {
         myDms = {};
         snap.forEach(d => { myDms[d.id] = d.data(); });
         if (activeContext?.type !== 'server') renderDmList();
+        // The other person's name/avatar/color may have just changed —
+        // repaint any already-loaded messages in the open DM so they
+        // reflect it too, instead of staying frozen at send-time.
+        if (activeContext?.type === 'dm' && lastRenderedMessages.length) {
+            renderMessagesFromCache();
+        }
     });
 }
 
@@ -2154,6 +2160,12 @@ function subscribeServerMeta(serverId) {
         if (snap.exists()) {
             window.__currentServerMembers = snap.data().members || {};
             renderMemberList();
+            // A member's name/avatar/color may have just changed — repaint
+            // any already-loaded messages in view so they reflect it too,
+            // instead of staying frozen with the name from send-time.
+            if (activeContext?.type === 'server' && lastRenderedMessages.length) {
+                renderMessagesFromCache();
+            }
         }
     });
 }
@@ -2272,13 +2284,9 @@ function subscribeMessages(collectionRoot, contextId, channelId) {
     // everyone, which is why chat looked "not updating."
     const q = query(messagesRef, orderBy('ts', 'asc'), limitToLast(100));
     activeMessagesUnsub = onSnapshot(q, (snap) => {
+        lastRenderedMessages = snap.docs.map(d => ({ data: d.data(), ref: d.ref }));
         const wasNearBottom = isNearBottom();
-        messagesArea.innerHTML = '';
-        lastGroupSenderId = null;
-        lastGroupEl = null;
-        lastGroupTs = 0;
-        lastDayKey = null;
-        snap.forEach(d => appendMessage(d.data(), d.ref));
+        renderMessagesFromCache();
         // Only yank the scroll position to the bottom if the user was already
         // down there — otherwise leave them where they are reading history.
         if (wasNearBottom) {
@@ -2290,6 +2298,20 @@ function subscribeMessages(collectionRoot, contextId, channelId) {
     });
 }
 
+// Holds the last snapshot's docs so we can re-render the visible message
+// list (with fresh live sender names/avatars) without waiting for a new
+// message or re-querying Firestore — used when a member's profile changes.
+let lastRenderedMessages = [];
+
+function renderMessagesFromCache() {
+    messagesArea.innerHTML = '';
+    lastGroupSenderId = null;
+    lastGroupEl = null;
+    lastGroupTs = 0;
+    lastDayKey = null;
+    lastRenderedMessages.forEach(({ data, ref }) => appendMessage(data, ref));
+}
+
 messagesArea.addEventListener('scroll', () => {
     if (isNearBottom()) jumpToBottomBtn.classList.remove('is-visible');
 });
@@ -2298,9 +2320,54 @@ jumpToBottomBtn.addEventListener('click', () => {
     jumpToBottomBtn.classList.remove('is-visible');
 });
 
+// Looks up a sender's CURRENT name/avatar/photo/color from whatever live
+// roster we have for the active context (server member list or DM pointer
+// doc), falling back to the snapshotted fields stored on the message itself
+// if the sender isn't found live (e.g. they left the server, or this is a
+// message from a context we don't have a live roster for). This is what
+// makes name/avatar changes show up retroactively on old messages instead
+// of being frozen at send-time.
+function getLiveSenderProfile(senderId, fallback) {
+    if (senderId === currentUser?.uid) {
+        // Our own messages: always reflect our own live profile immediately.
+        return {
+            name: currentProfile?.username || fallback.name,
+            avatarEmoji: currentProfile?.avatarEmoji ?? fallback.avatarEmoji,
+            photoURL: currentProfile?.photoURL ?? fallback.photoURL,
+            profileColor: currentProfile?.profileColor ?? fallback.profileColor
+        };
+    }
+    if (activeContext?.type === 'server') {
+        const m = (window.__currentServerMembers || {})[senderId];
+        if (m) {
+            return {
+                name: m.name || fallback.name,
+                avatarEmoji: m.avatarEmoji ?? fallback.avatarEmoji,
+                photoURL: m.photoURL ?? fallback.photoURL,
+                profileColor: m.profileColor ?? fallback.profileColor
+            };
+        }
+    } else if (activeContext?.type === 'dm') {
+        const d = myDms[activeContext.id];
+        if (d?.otherUid === senderId) {
+            return {
+                name: d.otherName || fallback.name,
+                avatarEmoji: d.otherAvatarEmoji ?? fallback.avatarEmoji,
+                photoURL: d.otherPhotoURL ?? fallback.photoURL,
+                profileColor: d.otherProfileColor ?? fallback.profileColor
+            };
+        }
+    }
+    return fallback;
+}
+
 function appendMessage(m, msgRef) {
     const isMe = m.senderId === currentUser.uid;
-    const avatar = buildAvatarStyle(m.senderName, m.senderAvatarEmoji, m.senderPhotoURL, m.senderProfileColor);
+    const live = getLiveSenderProfile(m.senderId, {
+        name: m.senderName, avatarEmoji: m.senderAvatarEmoji,
+        photoURL: m.senderPhotoURL, profileColor: m.senderProfileColor
+    });
+    const avatar = buildAvatarStyle(live.name, live.avatarEmoji, live.photoURL, live.profileColor);
     const timeStr = formatTime(m.ts);
     const msgMs = m.ts?.toDate ? m.ts.toDate().getTime() : (m.ts ? new Date(m.ts).getTime() : Date.now());
     const msgId = msgRef?.id || null;
@@ -2361,7 +2428,7 @@ function appendMessage(m, msgRef) {
             <div class="msg-body">
                 ${replyHtml}
                 <div class="msg-headline">
-                    <span class="msg-sender${isMe ? ' is-me' : ''}" data-uid="${escHtml(m.senderId)}">${isMe ? 'You' : escHtml(m.senderName)}</span>
+                    <span class="msg-sender${isMe ? ' is-me' : ''}" data-uid="${escHtml(m.senderId)}">${isMe ? 'You' : escHtml(live.name)}</span>
                     <span class="msg-time">${timeStr}</span>
                 </div>
                 <div class="msg-line">${escHtml(m.text)}</div>
@@ -2375,7 +2442,7 @@ function appendMessage(m, msgRef) {
         el.querySelectorAll('[data-uid]').forEach(avEl => {
             avEl.addEventListener('click', (e) => {
                 e.stopPropagation();
-                openViewProfile(m.senderId, { name: m.senderName, avatarEmoji: m.senderAvatarEmoji, photoURL: m.senderPhotoURL, profileColor: m.senderProfileColor });
+                openViewProfile(m.senderId, { name: live.name, avatarEmoji: live.avatarEmoji, photoURL: live.photoURL, profileColor: live.profileColor });
             });
         });
     }
