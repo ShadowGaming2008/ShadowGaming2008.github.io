@@ -369,7 +369,6 @@ async function loadOrCreateProfile(user) {
     const snap = await getDoc(ref);
     if (snap.exists()) {
         currentProfile = snap.data();
-        console.log('[token-debug] initial getDoc fromCache:', snap.metadata.fromCache, '| raw bypassTokens:', currentProfile.bypassTokens);
         // Keep Google-sourced fields fresh in case they changed (new photo, etc).
         const freshFields = { displayName: user.displayName || "", email: user.email || "", photoURL: user.photoURL || "" };
         const needsUpdate = Object.entries(freshFields).some(([k, v]) => currentProfile[k] !== v);
@@ -417,7 +416,6 @@ async function loadOrCreateProfile(user) {
     profileUnsub = onSnapshot(ref, (s) => {
         if (!s.exists()) return;
         const data = s.data();
-        console.log('[token-debug] snapshot fromCache:', s.metadata.fromCache, '| hasPendingWrites:', s.metadata.hasPendingWrites, '| raw bypassTokens:', data.bypassTokens);
         currentProfile = data;
         if (!currentProfile.stats) currentProfile.stats = defaultStats();
         if (currentProfile.stats.xp === undefined) currentProfile.stats.xp = 0;
@@ -1531,7 +1529,6 @@ const roundEndScreen = document.getElementById("screen-roundend");
 const AD_COOLDOWN_MS = 60000; // mirrors the Firestore rule's 55s floor with a little headroom
 
 function renderTokenBalanceUI() {
-    console.log('[token-debug] uid:', currentUser?.uid, '| bypassTokens:', currentProfile?.bypassTokens, '(' + typeof currentProfile?.bypassTokens + ')', '| tokens:', currentProfile?.tokens);
     const el = document.getElementById('tokenBalanceDisplay');
     const adBtn = document.getElementById('watchAdBtn');
     if (!el) return; // element may not exist yet during early load
