@@ -618,12 +618,12 @@
                 <span class="hub-brand-name">Game Hub</span>
             </a>
             <span class="hub-divider"></span>
-            <span class="hub-game-tag">Richup</span>
+            <span class="hub-game-tag">Diceup</span>
         </div>
         <div class="flex items-center gap-2">
             <button id="rulesBtn" class="hub-btn hub-btn-ghost">📖 How to Play</button>
             <button id="exitButton" class="hub-btn hub-btn-ghost">← Exit to Hub</button>
-            <button id="leaderboardBtn" class="hub-btn hub-btn-brass" title="Richup leaderboard — separate from Dutch's">🏆 Leaderboard</button>
+            <button id="leaderboardBtn" class="hub-btn hub-btn-brass" title="Diceup leaderboard — separate from Dutch's">🏆 Leaderboard</button>
             <span id="tokenBalanceDisplay" class="hidden hub-btn hub-btn-ghost" style="cursor:default;pointer-events:none;" title="Tokens — spend 1 to host a table"></span>
             <button id="watchAdBtn" class="hidden hub-btn hub-btn-ghost" title="Watch a short ad to earn +1 token">🎬 +1</button>
             <button id="headerSignInBtn" class="hub-btn hub-btn-slate">Sign in</button>
@@ -2495,7 +2495,7 @@
             if (houses > 0) return space.rent[houses] || space.rent[space.rent.length - 1];
 
             // No houses: check for monopoly (full color group owned) which
-            // doubles base rent per Richup/Monopoly rules.
+            // doubles base rent per Diceup/Monopoly rules.
             const sameGroupSpaces = BOARD_DATA.filter(s => s.group === space.group);
             const ownsAll = sameGroupSpaces.every(s => state.properties?.[s.id] === ownerUid);
             const baseRent = space.rent[0];
@@ -2524,7 +2524,7 @@
             const logEntries = [{ msg: `${myName} rolled ${d1}+${d2}${isDoubles ? ' (doubles!)' : ''} (${totalRoll}).` }];
 
             // Three doubles in a row sends you straight to jail, no
-            // movement on the third roll (Richup/Monopoly rule).
+            // movement on the third roll (Diceup/Monopoly rule).
             const priorStreak = cachedGameState.doublesStreak || 0;
             const newStreak = isDoubles ? priorStreak + 1 : 0;
 
@@ -2835,7 +2835,7 @@
             const d2 = Math.floor(Math.random() * 6) + 1;
 
             // Track failed attempts; after 3 failed rolls, must pay the fine
-            // and move (per Richup/Monopoly jail rules).
+            // and move (per Diceup/Monopoly jail rules).
             const priorAttempts = cachedGameState.jailAttempts?.[localUser.uid] || 0;
 
             if (d1 === d2) {
@@ -3065,7 +3065,7 @@
         }
 
         // Unmortgaging: pay back the mortgage value plus 10% interest,
-        // matching standard Monopoly/Richup convention.
+        // matching standard Monopoly/Diceup convention.
         async function unmortgageCurrentProperty() {
             if (!currentRoomCode || !cachedGameState || selectedPropertySpaceId === null) return;
             const currentPos = selectedPropertySpaceId;
