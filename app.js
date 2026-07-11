@@ -369,6 +369,7 @@ async function loadOrCreateProfile(user) {
     const snap = await getDoc(ref);
     if (snap.exists()) {
         currentProfile = snap.data();
+        console.log('[token-debug] initial getDoc fromCache:', snap.metadata.fromCache, '| raw bypassTokens:', currentProfile.bypassTokens);
         // Keep Google-sourced fields fresh in case they changed (new photo, etc).
         const freshFields = { displayName: user.displayName || "", email: user.email || "", photoURL: user.photoURL || "" };
         const needsUpdate = Object.entries(freshFields).some(([k, v]) => currentProfile[k] !== v);
@@ -416,6 +417,7 @@ async function loadOrCreateProfile(user) {
     profileUnsub = onSnapshot(ref, (s) => {
         if (!s.exists()) return;
         const data = s.data();
+        console.log('[token-debug] snapshot fromCache:', s.metadata.fromCache, '| hasPendingWrites:', s.metadata.hasPendingWrites, '| raw bypassTokens:', data.bypassTokens);
         currentProfile = data;
         if (!currentProfile.stats) currentProfile.stats = defaultStats();
         if (currentProfile.stats.xp === undefined) currentProfile.stats.xp = 0;
