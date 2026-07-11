@@ -43,7 +43,7 @@
             grid-template-rows: repeat(11, minmax(0, 1fr));
             aspect-ratio: 1 / 1;
             width: 100%;
-            max-width: 980px;
+            max-width: 1160px;
             background: radial-gradient(circle at 50% 50%, #171022 0%, var(--hub-panel-raised) 70%);
             border: 5px solid #3a2f5c;
             border-radius: 18px;
@@ -139,8 +139,8 @@
             flex-direction: column;
             justify-content: flex-end;
             align-items: center;
-            padding: 3px 2px 4px;
-            font-size: 9.5px;
+            padding: 4px 3px 5px;
+            font-size: 10.5px;
             font-weight: 600;
             letter-spacing: 0.01em;
             position: relative;
@@ -181,14 +181,14 @@
             max-width: 100%;
         }
         .space-flag-icon {
-            font-size: 13px;
+            font-size: 14px;
             line-height: 1;
             margin-bottom: 1px;
             filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
         }
         .space-price-label {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 8.5px;
+            font-size: 9.5px;
             color: #9585f8;
             margin-top: 1px;
             font-weight: 700;
@@ -226,7 +226,7 @@
         .token-holder {
             display: flex;
             flex-wrap: wrap;
-            gap: 2px;
+            gap: 3px;
             justify-content: center;
             position: absolute;
             bottom: 3px;
@@ -236,22 +236,56 @@
         }
 
         .avatar-token {
-            width: 17px;
-            height: 17px;
+            width: 24px;
+            height: 24px;
             border-radius: 99px;
-            border: 2px solid rgba(255,255,255,0.9);
+            border: 2.5px solid rgba(255,255,255,0.95);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 9px;
-            font-weight: bold;
+            font-size: 12px;
+            font-weight: 800;
             color: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.65), 0 0 0 1.5px rgba(0,0,0,0.4);
             animation: token-pop 0.25s ease;
+            position: relative;
+            z-index: 11;
         }
         @keyframes token-pop {
             from { transform: scale(0.3); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
+        }
+
+        /* Marks whichever token belongs to the player whose turn it
+           currently is — a bright pulsing ring makes "you are here / it's
+           their turn" obvious at a glance instead of relying on the small
+           colour-coded circle alone. */
+        .avatar-token.active-turn {
+            width: 28px;
+            height: 28px;
+            border-width: 3px;
+            border-color: #fff;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.7), 0 0 0 2px rgba(255,255,255,0.5);
+            z-index: 12;
+            animation: token-pop 0.25s ease, token-pulse-ring 1.4s ease-in-out infinite;
+        }
+        .avatar-token.active-turn::after {
+            content: '';
+            position: absolute;
+            inset: -7px;
+            border-radius: 99px;
+            border: 2px solid #ffd84a;
+            animation: token-pulse-ring-outer 1.4s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes token-pulse-ring {
+            0%, 100% { box-shadow: 0 3px 10px rgba(0,0,0,0.7), 0 0 0 2px rgba(255,255,255,0.5), 0 0 0 0 rgba(255,216,74,0.6); }
+            50% { box-shadow: 0 3px 10px rgba(0,0,0,0.7), 0 0 0 2px rgba(255,255,255,0.5), 0 0 0 6px rgba(255,216,74,0); }
+        }
+        @keyframes token-pulse-ring-outer {
+            0% { transform: scale(0.85); opacity: 0.9; }
+            70% { transform: scale(1.35); opacity: 0; }
+            100% { transform: scale(1.35); opacity: 0; }
         }
 
         .owner-badge {
@@ -2215,14 +2249,16 @@
         function updateBoardTokens(state) {
             document.querySelectorAll(".token-holder").forEach(h => h.innerHTML = "");
             const orders = state.playersOrder || [];
+            const activePlayerUid = orders[state.turnIndex];
             orders.forEach((uid, index) => {
                 const pos = state.playerPositions?.[uid] ?? 0;
                 const holder = document.getElementById(`tokens-space-${pos}`);
                 if (holder) {
                     const token = document.createElement("div");
-                    token.className = "avatar-token";
+                    token.className = "avatar-token" + (uid === activePlayerUid ? " active-turn" : "");
                     token.style.backgroundColor = `hsl(${PLAYER_HUES[index % PLAYER_HUES.length]}, 70%, 50%)`;
                     token.textContent = uid === localUser.uid ? "⭐" : (index + 1);
+                    token.title = uid === activePlayerUid ? `${shortNameFor(uid) || 'Player'} — current turn` : (shortNameFor(uid) || '');
                     holder.appendChild(token);
                 }
             });
