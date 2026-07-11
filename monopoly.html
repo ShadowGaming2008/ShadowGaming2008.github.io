@@ -83,10 +83,13 @@
         }
 
         /* Grid specific positional item placements (0 to 39).
-           Board is mirrored horizontally from the classic layout so START/GO
-           sits top-left, JAIL top-right, GO TO JAIL bottom-left, and
-           VACATION bottom-right — movement order (id 0->1->2...->39->0)
-           is untouched, this only changes where each id is drawn. */
+           Corners stay fixed (START top-left, JAIL top-right, VACATION
+           bottom-right, GO TO JAIL bottom-left) but the side runs are
+           re-routed so gameplay travels START -> right along the top ->
+           JAIL -> down the RIGHT side -> VACATION -> left along the
+           bottom -> up the LEFT side -> GO TO JAIL -> back to START.
+           Movement order (id 0->1->2...->39->0) is untouched, this only
+           changes where each id is drawn. */
         .space-10 { grid-column: 1; grid-row: 1; }  /* GO / START */
         .space-1  { grid-column: 2; grid-row: 1; }
         .space-2  { grid-column: 3; grid-row: 1; }
@@ -98,35 +101,35 @@
         .space-8  { grid-column: 9; grid-row: 1; }
         .space-9  { grid-column: 10; grid-row: 1; }
         .space-0  { grid-column: 11; grid-row: 1; }  /* Jail (visiting) */
-        .space-39 { grid-column: 11; grid-row: 2; }
-        .space-38 { grid-column: 11; grid-row: 3; }
-        .space-37 { grid-column: 11; grid-row: 4; }
-        .space-36 { grid-column: 11; grid-row: 5; }
-        .space-35 { grid-column: 11; grid-row: 6; }
-        .space-34 { grid-column: 11; grid-row: 7; }
-        .space-33 { grid-column: 11; grid-row: 8; }
-        .space-32 { grid-column: 11; grid-row: 9; }
-        .space-31 { grid-column: 11; grid-row: 10; }
+        .space-11 { grid-column: 11; grid-row: 2; }
+        .space-12 { grid-column: 11; grid-row: 3; }
+        .space-13 { grid-column: 11; grid-row: 4; }
+        .space-14 { grid-column: 11; grid-row: 5; }
+        .space-15 { grid-column: 11; grid-row: 6; }
+        .space-16 { grid-column: 11; grid-row: 7; }
+        .space-17 { grid-column: 11; grid-row: 8; }
+        .space-18 { grid-column: 11; grid-row: 9; }
+        .space-19 { grid-column: 11; grid-row: 10; }
         .space-30 { grid-column: 11; grid-row: 11; } /* Vacation */
-        .space-29 { grid-column: 10; grid-row: 11; }
-        .space-28 { grid-column: 9; grid-row: 11; }
-        .space-27 { grid-column: 8; grid-row: 11; }
-        .space-26 { grid-column: 7; grid-row: 11; }
+        .space-21 { grid-column: 10; grid-row: 11; }
+        .space-22 { grid-column: 9; grid-row: 11; }
+        .space-23 { grid-column: 8; grid-row: 11; }
+        .space-24 { grid-column: 7; grid-row: 11; }
         .space-25 { grid-column: 6; grid-row: 11; }
-        .space-24 { grid-column: 5; grid-row: 11; }
-        .space-23 { grid-column: 4; grid-row: 11; }
-        .space-22 { grid-column: 3; grid-row: 11; }
-        .space-21 { grid-column: 2; grid-row: 11; }
+        .space-26 { grid-column: 5; grid-row: 11; }
+        .space-27 { grid-column: 4; grid-row: 11; }
+        .space-28 { grid-column: 3; grid-row: 11; }
+        .space-29 { grid-column: 2; grid-row: 11; }
         .space-20 { grid-column: 1; grid-row: 11; }  /* Go To Jail */
-        .space-19 { grid-column: 1; grid-row: 10; }
-        .space-18 { grid-column: 1; grid-row: 9; }
-        .space-17 { grid-column: 1; grid-row: 8; }
-        .space-16 { grid-column: 1; grid-row: 7; }
-        .space-15 { grid-column: 1; grid-row: 6; }
-        .space-14 { grid-column: 1; grid-row: 5; }
-        .space-13 { grid-column: 1; grid-row: 4; }
-        .space-12 { grid-column: 1; grid-row: 3; }
-        .space-11 { grid-column: 1; grid-row: 2; }
+        .space-31 { grid-column: 1; grid-row: 10; }
+        .space-32 { grid-column: 1; grid-row: 9; }
+        .space-33 { grid-column: 1; grid-row: 8; }
+        .space-34 { grid-column: 1; grid-row: 7; }
+        .space-35 { grid-column: 1; grid-row: 6; }
+        .space-36 { grid-column: 1; grid-row: 5; }
+        .space-37 { grid-column: 1; grid-row: 4; }
+        .space-38 { grid-column: 1; grid-row: 3; }
+        .space-39 { grid-column: 1; grid-row: 2; }
 
         .board-space {
             background: linear-gradient(160deg, #1c2836 0%, #151f2b 100%);
@@ -1566,7 +1569,7 @@
         const BOARD_DATA = [
             { id: 10,  name: "START", type: "go", color: null, cost: null, rent: [0], group: "special" },
             { id: 1,  name: "Salvador", type: "property", color: "#92400e", cost: 60, rent: [2, 10, 30, 90, 160, 250], houseCost: 50, group: "brown" },
-            { id: 2,  name: "Community Chest", type: "chest", color: null, cost: null, rent: [0], group: "special" },
+            { id: 2,  name: "Surprise", type: "chest", color: null, cost: null, rent: [0], group: "special" },
             { id: 3,  name: "Rio", type: "property", color: "#92400e", cost: 60, rent: [4, 20, 60, 180, 320, 450], houseCost: 50, group: "brown" },
             { id: 4,  name: "Income Tax", type: "tax", color: null, cost: null, rent: [200], group: "special" },
             { id: 5,  name: "TLV Airport", type: "railroad", color: "#475569", cost: 200, rent: [25, 50, 100, 200], group: "railroad" },
@@ -1575,15 +1578,15 @@
             { id: 8,  name: "Haifa", type: "property", color: "#0284c7", cost: 100, rent: [6, 30, 90, 270, 400, 550], houseCost: 50, group: "lightblue" },
             { id: 9,  name: "Jerusalem", type: "property", color: "#0284c7", cost: 120, rent: [8, 40, 100, 300, 450, 600], houseCost: 50, group: "lightblue" },
             { id: 0, name: "JAIL", type: "jail", color: null, cost: null, rent: [0], group: "special" },
-            { id: 11, name: "Venice", type: "property", color: "#db2777", cost: 140, rent: [10, 50, 150, 450, 625, 750], houseCost: 100, group: "pink" },
-            { id: 12, name: "Electric Company", type: "utility", color: "#78716c", cost: 150, rent: [4, 10], group: "utility" },
-            { id: 13, name: "Milan", type: "property", color: "#db2777", cost: 140, rent: [10, 50, 150, 450, 625, 750], houseCost: 100, group: "pink" },
-            { id: 14, name: "Rome", type: "property", color: "#db2777", cost: 160, rent: [12, 60, 180, 500, 700, 900], houseCost: 100, group: "pink" },
-            { id: 15, name: "MUC Airport", type: "railroad", color: "#475569", cost: 200, rent: [25, 50, 100, 200], group: "railroad" },
-            { id: 16, name: "Frankfurt", type: "property", color: "#ea580c", cost: 180, rent: [14, 70, 200, 550, 750, 950], houseCost: 100, group: "orange" },
-            { id: 17, name: "Community Chest", type: "chest", color: null, cost: null, rent: [0], group: "special" },
-            { id: 18, name: "Munich", type: "property", color: "#ea580c", cost: 180, rent: [14, 70, 200, 550, 750, 950], houseCost: 100, group: "orange" },
-            { id: 19, name: "Berlin", type: "property", color: "#ea580c", cost: 200, rent: [16, 80, 220, 600, 800, 1000], houseCost: 100, group: "orange" },
+            { id: 31, name: "Venice", type: "property", color: "#db2777", cost: 140, rent: [10, 50, 150, 450, 625, 750], houseCost: 100, group: "pink" },
+            { id: 32, name: "Electric Company", type: "utility", color: "#78716c", cost: 150, rent: [4, 10], group: "utility" },
+            { id: 33, name: "Milan", type: "property", color: "#db2777", cost: 140, rent: [10, 50, 150, 450, 625, 750], houseCost: 100, group: "pink" },
+            { id: 34, name: "Rome", type: "property", color: "#db2777", cost: 160, rent: [12, 60, 180, 500, 700, 900], houseCost: 100, group: "pink" },
+            { id: 35, name: "MUC Airport", type: "railroad", color: "#475569", cost: 200, rent: [25, 50, 100, 200], group: "railroad" },
+            { id: 36, name: "Frankfurt", type: "property", color: "#ea580c", cost: 180, rent: [14, 70, 200, 550, 750, 950], houseCost: 100, group: "orange" },
+            { id: 37, name: "Surprise", type: "chest", color: null, cost: null, rent: [0], group: "special" },
+            { id: 38, name: "Munich", type: "property", color: "#ea580c", cost: 180, rent: [14, 70, 200, 550, 750, 950], houseCost: 100, group: "orange" },
+            { id: 39, name: "Berlin", type: "property", color: "#ea580c", cost: 200, rent: [16, 80, 220, 600, 800, 1000], houseCost: 100, group: "orange" },
             { id: 30, name: "VACATION", type: "parking", color: null, cost: null, rent: [0], group: "special" },
             { id: 21, name: "Shenzhen", type: "property", color: "#e11d48", cost: 220, rent: [18, 90, 250, 700, 875, 1050], houseCost: 150, group: "red" },
             { id: 22, name: "Chance", type: "chance", color: null, cost: null, rent: [0], group: "special" },
@@ -1595,15 +1598,15 @@
             { id: 28, name: "Water Company", type: "utility", color: "#78716c", cost: 150, rent: [4, 10], group: "utility" },
             { id: 29, name: "Paris", type: "property", color: "#eab308", cost: 280, rent: [24, 120, 360, 850, 1025, 1200], houseCost: 150, group: "yellow" },
             { id: 20, name: "GO TO JAIL", type: "gotojail", color: null, cost: null, rent: [0], group: "special" },
-            { id: 31, name: "Liverpool", type: "property", color: "#16a34a", cost: 300, rent: [26, 130, 390, 900, 1100, 1275], houseCost: 200, group: "green" },
-            { id: 32, name: "Manchester", type: "property", color: "#16a34a", cost: 300, rent: [26, 130, 390, 900, 1100, 1275], houseCost: 200, group: "green" },
-            { id: 33, name: "Community Chest", type: "chest", color: null, cost: null, rent: [0], group: "special" },
-            { id: 34, name: "London", type: "property", color: "#16a34a", cost: 320, rent: [28, 150, 450, 1000, 1200, 1400], houseCost: 200, group: "green" },
-            { id: 35, name: "JFK Airport", type: "railroad", color: "#475569", cost: 200, rent: [25, 50, 100, 200], group: "railroad" },
-            { id: 36, name: "Chance", type: "chance", color: null, cost: null, rent: [0], group: "special" },
-            { id: 37, name: "San Francisco", type: "property", color: "#2563eb", cost: 350, rent: [35, 175, 500, 1100, 1300, 1500], houseCost: 200, group: "darkblue" },
-            { id: 38, name: "Luxury Tax", type: "tax", color: null, cost: null, rent: [100], group: "special" },
-            { id: 39, name: "New York", type: "property", color: "#2563eb", cost: 400, rent: [50, 200, 600, 1400, 1700, 2000], houseCost: 200, group: "darkblue" }
+            { id: 11, name: "Liverpool", type: "property", color: "#16a34a", cost: 300, rent: [26, 130, 390, 900, 1100, 1275], houseCost: 200, group: "green" },
+            { id: 12, name: "Manchester", type: "property", color: "#16a34a", cost: 300, rent: [26, 130, 390, 900, 1100, 1275], houseCost: 200, group: "green" },
+            { id: 13, name: "Surprise", type: "chest", color: null, cost: null, rent: [0], group: "special" },
+            { id: 14, name: "London", type: "property", color: "#16a34a", cost: 320, rent: [28, 150, 450, 1000, 1200, 1400], houseCost: 200, group: "green" },
+            { id: 15, name: "JFK Airport", type: "railroad", color: "#475569", cost: 200, rent: [25, 50, 100, 200], group: "railroad" },
+            { id: 16, name: "Chance", type: "chance", color: null, cost: null, rent: [0], group: "special" },
+            { id: 17, name: "San Francisco", type: "property", color: "#2563eb", cost: 350, rent: [35, 175, 500, 1100, 1300, 1500], houseCost: 200, group: "darkblue" },
+            { id: 18, name: "Luxury Tax", type: "tax", color: null, cost: null, rent: [100], group: "special" },
+            { id: 19, name: "New York", type: "property", color: "#2563eb", cost: 400, rent: [50, 200, 600, 1400, 1700, 2000], houseCost: 200, group: "darkblue" }
         ];
 
         // ── Full card decks (Chance + Community Chest drawn independently) ──
@@ -1696,27 +1699,27 @@
             1: '🇧🇷', 3: '🇧🇷',                         // brown: Brazil
             5: '✈️',                                     // TLV Airport
             6: '🇮🇱', 8: '🇮🇱', 9: '🇮🇱',                 // light blue: Israel
-            12: '💡',                                    // Electric Company
-            11: '🇮🇹', 13: '🇮🇹', 14: '🇮🇹',              // pink: Italy
-            15: '✈️',                                     // MUC Airport
-            16: '🇩🇪', 18: '🇩🇪', 19: '🇩🇪',              // orange: Germany
+            32: '💡',                                    // Electric Company
+            31: '🇮🇹', 33: '🇮🇹', 34: '🇮🇹',              // pink: Italy
+            35: '✈️',                                     // MUC Airport
+            36: '🇩🇪', 38: '🇩🇪', 39: '🇩🇪',              // orange: Germany
             21: '🇨🇳', 23: '🇨🇳', 24: '🇨🇳',              // red: China
             25: '✈️',                                     // CDG Airport
             26: '🇫🇷', 27: '🇫🇷', 29: '🇫🇷',              // yellow: France
             28: '🚰',                                    // Water Company
-            31: '🇬🇧', 32: '🇬🇧', 34: '🇬🇧',              // green: UK
-            35: '✈️',                                     // JFK Airport
-            37: '🇺🇸', 39: '🇺🇸',                        // dark blue: USA
-            2: '📦', 17: '📦', 33: '📦',                 // Community Chest
-            7: '❓', 22: '❓', 36: '❓',                  // Chance
-            4: '💰', 38: '💎'                            // Income Tax, Luxury Tax
+            11: '🇬🇧', 12: '🇬🇧', 14: '🇬🇧',              // green: UK
+            15: '✈️',                                     // JFK Airport
+            17: '🇺🇸', 19: '🇺🇸',                        // dark blue: USA
+            2: '📦', 37: '📦', 13: '📦',                 // Community Chest
+            7: '❓', 22: '❓', 16: '❓',                  // Chance
+            4: '💰', 18: '💎'                            // Income Tax, Luxury Tax
         };
 
         function sideForSpaceId(id) {
             if (id >= 1 && id <= 9) return 'side-top';
-            if (id >= 11 && id <= 19) return 'side-left';
+            if (id >= 11 && id <= 19) return 'side-right';
             if (id >= 21 && id <= 29) return 'side-bottom';
-            if (id >= 31 && id <= 39) return 'side-right';
+            if (id >= 31 && id <= 39) return 'side-left';
             return '';
         }
 
