@@ -969,7 +969,7 @@
     </div>
 
     <div id="propertyModal" class="hidden">
-        <div class="hub-panel w-full max-w-sm p-6 space-y-4">
+        <div class="hub-panel w-full max-w-sm p-6 space-y-4 max-h-[85vh] overflow-y-auto">
             <div class="flex items-center justify-between pb-3" style="border-bottom:1px solid var(--hub-border-soft);">
                 <h3 id="propModalTitle" class="font-display text-xl font-bold" style="color:var(--hub-text-bright);"></h3>
                 <button id="closePropertyModalBtn" class="text-xl font-bold w-8 h-8 flex items-center justify-center rounded-lg transition" style="color:var(--hub-muted);">✕</button>
@@ -2930,6 +2930,76 @@
         // ─────────────────────────────────────────────
         let selectedPropertySpaceId = null;
 
+        // Builds the "how much will this earn me" breakdown shown inside the
+        // property modal — base rent, monopoly rent, and the full house/hotel
+        // ladder (cost to build vs. rent it then commands), or the railroad /
+        // utility equivalents.
+        function buildRentTableHTML(space, state) {
+            const houses = state.propertyHouses?.[space.id] || 0;
+            const rows = [];
+
+            if (space.type === "property") {
+                const sameGroupSpaces = BOARD_DATA.filter(s => s.group === space.group);
+                const ownsAll = state.properties &&
+                    sameGroupSpaces.every(s => state.properties[s.id] === state.properties[space.id]) &&
+                    !!state.properties[space.id];
+
+                rows.push(rentRow("Rent (base)", `$${space.rent[0]}`, houses === 0 && !ownsAll));
+                rows.push(rentRow("Rent (monopoly, no houses)", `$${space.rent[0] * 2}`, houses === 0 && ownsAll));
+
+                const houseLabels = ["1 house", "2 houses", "3 houses", "4 houses", "Hotel"];
+                for (let i = 1; i <= 5; i++) {
+                    const rentAtLevel = space.rent[i];
+                    if (rentAtLevel === undefined) continue;
+                    const buildCostSoFar = space.houseCost * i;
+                    const label = `${houseLabels[i - 1]} <span style="opacity:.65;">(costs $${space.houseCost}${i > 1 ? ` /ea, $${buildCostSoFar} total` : ''})</span>`;
+                    rows.push(rentRow(label, `$${rentAtLevel}`, houses === i));
+                }
+
+                return `
+                    <div class="pt-2 mt-2" style="border-top:1px solid var(--hub-border-soft);">
+                        <div class="text-[10px] font-bold uppercase tracking-wider mb-1.5" style="color:var(--hub-faint);">If a player lands here…</div>
+                        <div class="space-y-1">${rows.join('')}</div>
+                    </div>`;
+            }
+
+            if (space.type === "railroad") {
+                const labels = ["1 Railroad", "2 Railroads", "3 Railroads", "4 Railroads"];
+                const ownedCount = BOARD_DATA.filter(s => s.type === "railroad" && state.properties?.[s.id] === state.properties?.[space.id]).length;
+                space.rent.forEach((amt, i) => {
+                    rows.push(rentRow(labels[i] || `${i + 1} owned`, `$${amt}`, state.properties?.[space.id] && (ownedCount - 1) === i));
+                });
+                return `
+                    <div class="pt-2 mt-2" style="border-top:1px solid var(--hub-border-soft);">
+                        <div class="text-[10px] font-bold uppercase tracking-wider mb-1.5" style="color:var(--hub-faint);">Rent scales with railroads owned</div>
+                        <div class="space-y-1">${rows.join('')}</div>
+                    </div>`;
+            }
+
+            if (space.type === "utility") {
+                rows.push(rentRow("1 Utility owned", "4 × dice roll", false));
+                rows.push(rentRow("2 Utilities owned", "10 × dice roll", false));
+                return `
+                    <div class="pt-2 mt-2" style="border-top:1px solid var(--hub-border-soft);">
+                        <div class="text-[10px] font-bold uppercase tracking-wider mb-1.5" style="color:var(--hub-faint);">Rent depends on the dice roll</div>
+                        <div class="space-y-1">${rows.join('')}</div>
+                    </div>`;
+            }
+
+            return '';
+        }
+
+        function rentRow(label, value, highlight) {
+            const style = highlight
+                ? 'background:rgba(124,106,245,0.15);border-radius:6px;padding:2px 6px;margin:0 -6px;'
+                : 'padding:2px 0;';
+            const valueColor = highlight ? 'color:var(--hub-text-bright);font-weight:700;' : '';
+            return `<div class="flex items-center justify-between text-[11px]" style="${style}">
+                        <span>${label}${highlight ? ' <span style="color:#a78bfa;">← current</span>' : ''}</span>
+                        <span style="${valueColor}">${value}</span>
+                    </div>`;
+        }
+
         function openPropertyModal(spaceId) {
             if (!cachedGameState) return;
             const space = BOARD_DATA[spaceId];
@@ -2958,7 +3028,7 @@
             if (space.type === "property" && houses > 0) {
                 infoLines.push(houses === 5 ? `Improvements: Hotel` : `Improvements: ${houses} house${houses > 1 ? 's' : ''}`);
             }
-            document.getElementById("propModalInfo").innerHTML = infoLines.map(l => `<div>${l}</div>`).join('');
+            document.getElementById("propModalInfo").innerHTML = infoLines.map(l => `<div>${l}</div>`).join('') + buildRentTableHTML(space, state);
 
             // ── Action buttons ──
             const buildBtn = document.getElementById("btnBuildHouse");
