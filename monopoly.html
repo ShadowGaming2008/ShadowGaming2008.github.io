@@ -1840,6 +1840,7 @@
         const AD_COOLDOWN_MS = 60000; // mirrors the Firestore rule's 55s floor with headroom
 
         function renderTokenBalanceUI() {
+            console.log('[token-debug/monopoly] localUser:', localUser?.uid, 'isGuest:', localUser?.isGuest, '| bypassTokens:', currentProfile?.bypassTokens, '(' + typeof currentProfile?.bypassTokens + ')', '| tokens:', currentProfile?.tokens);
             const el = document.getElementById('tokenBalanceDisplay');
             const adBtn = document.getElementById('watchAdBtn');
             if (!el) return;

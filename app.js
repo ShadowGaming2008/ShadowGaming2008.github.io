@@ -1529,6 +1529,7 @@ const roundEndScreen = document.getElementById("screen-roundend");
 const AD_COOLDOWN_MS = 60000; // mirrors the Firestore rule's 55s floor with a little headroom
 
 function renderTokenBalanceUI() {
+    console.log('[token-debug] uid:', currentUser?.uid, '| bypassTokens:', currentProfile?.bypassTokens, '(' + typeof currentProfile?.bypassTokens + ')', '| tokens:', currentProfile?.tokens);
     const el = document.getElementById('tokenBalanceDisplay');
     const adBtn = document.getElementById('watchAdBtn');
     if (!el) return; // element may not exist yet during early load
