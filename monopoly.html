@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8718398889826506"
-         crossorigin="anonymous"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DiceUp</title>
+    <title>Global Tycoon - Monopoly</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
@@ -43,7 +41,7 @@
             grid-template-rows: repeat(11, minmax(0, 1fr));
             aspect-ratio: 1 / 1;
             width: 100%;
-            max-width: 1160px;
+            max-width: 760px;
             background: radial-gradient(circle at 50% 50%, #171022 0%, var(--hub-panel-raised) 70%);
             border: 5px solid #3a2f5c;
             border-radius: 18px;
@@ -82,13 +80,8 @@
             pointer-events: none;
         }
 
-        /* Grid specific positional item placements (0 to 39).
-           Corners stay fixed (START top-left, JAIL top-right, VACATION
-           bottom-right, GO TO JAIL bottom-left) and ids now increase in
-           that exact same clockwise order (START=0, JAIL=10, VACATION=20,
-           GO TO JAIL=30), matching the id 0->1->2...->39->0 movement math
-           used elsewhere in the game. */
-        .space-0  { grid-column: 1; grid-row: 1; }  /* GO / START */
+        /* Grid specific positional item placements (0 to 39) */
+        .space-0  { grid-column: 1; grid-row: 1; } /* Jail */
         .space-1  { grid-column: 2; grid-row: 1; }
         .space-2  { grid-column: 3; grid-row: 1; }
         .space-3  { grid-column: 4; grid-row: 1; }
@@ -98,7 +91,7 @@
         .space-7  { grid-column: 8; grid-row: 1; }
         .space-8  { grid-column: 9; grid-row: 1; }
         .space-9  { grid-column: 10; grid-row: 1; }
-        .space-10 { grid-column: 11; grid-row: 1; }  /* Jail (visiting) */
+        .space-10 { grid-column: 11; grid-row: 1; } /* GO */
         .space-11 { grid-column: 11; grid-row: 2; }
         .space-12 { grid-column: 11; grid-row: 3; }
         .space-13 { grid-column: 11; grid-row: 4; }
@@ -108,7 +101,7 @@
         .space-17 { grid-column: 11; grid-row: 8; }
         .space-18 { grid-column: 11; grid-row: 9; }
         .space-19 { grid-column: 11; grid-row: 10; }
-        .space-20 { grid-column: 11; grid-row: 11; } /* Vacation */
+        .space-20 { grid-column: 11; grid-row: 11; } /* Go To Jail */
         .space-21 { grid-column: 10; grid-row: 11; }
         .space-22 { grid-column: 9; grid-row: 11; }
         .space-23 { grid-column: 8; grid-row: 11; }
@@ -118,7 +111,7 @@
         .space-27 { grid-column: 4; grid-row: 11; }
         .space-28 { grid-column: 3; grid-row: 11; }
         .space-29 { grid-column: 2; grid-row: 11; }
-        .space-30 { grid-column: 1; grid-row: 11; }  /* Go To Jail */
+        .space-30 { grid-column: 1; grid-row: 11; } /* Vacation */
         .space-31 { grid-column: 1; grid-row: 10; }
         .space-32 { grid-column: 1; grid-row: 9; }
         .space-33 { grid-column: 1; grid-row: 8; }
@@ -137,8 +130,8 @@
             flex-direction: column;
             justify-content: flex-end;
             align-items: center;
-            padding: 4px 3px 5px;
-            font-size: 10.5px;
+            padding: 2px 1px 3px;
+            font-size: 7.5px;
             font-weight: 600;
             letter-spacing: 0.01em;
             position: relative;
@@ -179,14 +172,14 @@
             max-width: 100%;
         }
         .space-flag-icon {
-            font-size: 14px;
+            font-size: 11px;
             line-height: 1;
             margin-bottom: 1px;
             filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
         }
         .space-price-label {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 9.5px;
+            font-size: 7px;
             color: #9585f8;
             margin-top: 1px;
             font-weight: 700;
@@ -205,7 +198,7 @@
             gap: 2px;
         }
         .corner-space .space-name-label {
-            font-size: 11px;
+            font-size: 9.5px;
             letter-spacing: 0.03em;
             color: #f5f1e8;
             white-space: normal;
@@ -214,17 +207,17 @@
             line-height: 1.1;
         }
         .corner-icon {
-            font-size: 23px;
+            font-size: 20px;
             line-height: 1;
             filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
         }
-        .space-0 .corner-icon { color: #ef4444; transform: rotate(45deg); } /* GO arrow now points from top-left toward space 1 */
-        .space-30 .corner-icon { color: #ef4444; transform: scaleX(-1); } /* Go To Jail badge now bottom-left, mirrored to face inward */
+        .space-10 .corner-icon { color: #ef4444; transform: rotate(-135deg) scaleX(-1); }
+        .space-20 .corner-icon { color: #ef4444; }
 
         .token-holder {
             display: flex;
             flex-wrap: wrap;
-            gap: 3px;
+            gap: 2px;
             justify-content: center;
             position: absolute;
             bottom: 3px;
@@ -234,56 +227,22 @@
         }
 
         .avatar-token {
-            width: 24px;
-            height: 24px;
+            width: 17px;
+            height: 17px;
             border-radius: 99px;
-            border: 2.5px solid rgba(255,255,255,0.95);
+            border: 2px solid rgba(255,255,255,0.9);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            font-weight: 800;
+            font-size: 9px;
+            font-weight: bold;
             color: white;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.65), 0 0 0 1.5px rgba(0,0,0,0.4);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.3);
             animation: token-pop 0.25s ease;
-            position: relative;
-            z-index: 11;
         }
         @keyframes token-pop {
             from { transform: scale(0.3); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
-        }
-
-        /* Marks whichever token belongs to the player whose turn it
-           currently is — a bright pulsing ring makes "you are here / it's
-           their turn" obvious at a glance instead of relying on the small
-           colour-coded circle alone. */
-        .avatar-token.active-turn {
-            width: 28px;
-            height: 28px;
-            border-width: 3px;
-            border-color: #fff;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.7), 0 0 0 2px rgba(255,255,255,0.5);
-            z-index: 12;
-            animation: token-pop 0.25s ease, token-pulse-ring 1.4s ease-in-out infinite;
-        }
-        .avatar-token.active-turn::after {
-            content: '';
-            position: absolute;
-            inset: -7px;
-            border-radius: 99px;
-            border: 2px solid #ffd84a;
-            animation: token-pulse-ring-outer 1.4s ease-in-out infinite;
-            pointer-events: none;
-        }
-        @keyframes token-pulse-ring {
-            0%, 100% { box-shadow: 0 3px 10px rgba(0,0,0,0.7), 0 0 0 2px rgba(255,255,255,0.5), 0 0 0 0 rgba(255,216,74,0.6); }
-            50% { box-shadow: 0 3px 10px rgba(0,0,0,0.7), 0 0 0 2px rgba(255,255,255,0.5), 0 0 0 6px rgba(255,216,74,0); }
-        }
-        @keyframes token-pulse-ring-outer {
-            0% { transform: scale(0.85); opacity: 0.9; }
-            70% { transform: scale(1.35); opacity: 0; }
-            100% { transform: scale(1.35); opacity: 0; }
         }
 
         .owner-badge {
@@ -647,6 +606,54 @@
         .trade-prop-chip .chip-dot {
             width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
         }
+
+        /* ── Scrollable player ledger / assets panel ──
+           Both lists are capped to a comfortable viewing height and scroll
+           internally once there's more content than fits, rather than
+           pushing the rest of the page down. The ledger only gets capped
+           once there are 3+ players (toggled via JS by adding this class),
+           since 1-2 players always fit without needing a scrollbar. The
+           assets panel is always capped since a single player can easily
+           accumulate more properties than fit in view. */
+        #playerLedger.scrollable-list, #assetsPanel {
+            max-height: 340px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #3a4859 #0d1319;
+        }
+        #playerLedger.scrollable-list::-webkit-scrollbar, #assetsPanel::-webkit-scrollbar {
+            width: 6px;
+        }
+        #playerLedger.scrollable-list::-webkit-scrollbar-thumb, #assetsPanel::-webkit-scrollbar-thumb {
+            background: #3a4859; border-radius: 999px;
+        }
+        #playerLedger.scrollable-list::-webkit-scrollbar-track, #assetsPanel::-webkit-scrollbar-track {
+            background: #0d1319;
+        }
+
+        .asset-player-group {
+            border: 1px solid #263140; border-radius: 12px; overflow: hidden;
+        }
+        .asset-player-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 8px 12px; background: #0d1319; font-size: 11px; font-weight: 700;
+            color: #9aa5b3; text-transform: uppercase; letter-spacing: 0.03em;
+        }
+        .asset-prop-row {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 8px; padding: 6px 12px; font-size: 12px; border-top: 1px solid #1a2530;
+        }
+        .asset-prop-row .chip-dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-right: 6px;
+        }
+        .asset-empty-note {
+            padding: 10px 12px; font-size: 11px; color: #64748b; font-style: italic;
+        }
+        .asset-goojf-row {
+            display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+            font-size: 12px; border-top: 1px solid #1a2530; color: #d8b4fe;
+            background: rgba(168,85,247,0.06);
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -659,12 +666,12 @@
                 <span class="hub-brand-name">Game Hub</span>
             </a>
             <span class="hub-divider"></span>
-            <span class="hub-game-tag">Diceup</span>
+            <span class="hub-game-tag">Richup</span>
         </div>
         <div class="flex items-center gap-2">
             <button id="rulesBtn" class="hub-btn hub-btn-ghost">📖 How to Play</button>
             <button id="exitButton" class="hub-btn hub-btn-ghost">← Exit to Hub</button>
-            <button id="leaderboardBtn" class="hub-btn hub-btn-brass" title="Diceup leaderboard — separate from Dutch's">🏆 Leaderboard</button>
+            <button id="leaderboardBtn" class="hub-btn hub-btn-brass" title="Richup leaderboard — separate from Dutch's">🏆 Leaderboard</button>
             <span id="tokenBalanceDisplay" class="hidden hub-btn hub-btn-ghost" style="cursor:default;pointer-events:none;" title="Tokens — spend 1 to host a table"></span>
             <button id="watchAdBtn" class="hidden hub-btn hub-btn-ghost" title="Watch a short ad to earn +1 token">🎬 +1</button>
             <button id="headerSignInBtn" class="hub-btn hub-btn-slate">Sign in</button>
@@ -749,7 +756,7 @@
     <div id="leaderboardModal" class="hidden fixed inset-0 backdrop-blur-sm hub-modal-backdrop flex items-end sm:items-center justify-center p-4" style="z-index:50;">
         <div class="hub-panel w-full max-w-lg max-h-[80vh] flex flex-col">
             <div class="flex items-center justify-between p-5" style="border-bottom:1px solid var(--hub-border-soft);">
-                <h2 class="font-display text-xl font-bold" style="color:var(--hub-text-bright);">🏆 DiceUp Leaderboard</h2>
+                <h2 class="font-display text-xl font-bold" style="color:var(--hub-text-bright);">🏆 RichUp Leaderboard</h2>
                 <button id="closeLeaderboardBtn" class="text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-lg transition" style="color:var(--hub-muted);" onmouseover="this.style.color='var(--hub-text)';this.style.background='var(--hub-panel-raised)'" onmouseout="this.style.color='var(--hub-muted)';this.style.background='transparent'">✕</button>
             </div>
             <div id="leaderboardContent" class="flex-1 overflow-y-auto p-4 space-y-2">
@@ -772,7 +779,7 @@
                      play works fine via "Continue as Guest" below. -->
                 <div id="signedOutLobbyArea" class="hidden text-center space-y-4">
                     <span class="hub-eyebrow" style="margin-bottom:4px;">Pull up a chair</span>
-                    <h2 class="font-display font-bold text-2xl text-white mt-2">DiceUp</h2>
+                    <h2 class="font-display font-bold text-2xl text-white mt-2">RichUp</h2>
                     <p class="text-sm text-[#9aa5b3]">Sign in to save your stats and appear on the leaderboard — or play as a guest below.</p>
                     <button id="landingSignInBtn" class="w-full flex items-center justify-center gap-2 py-3 bg-white hover:bg-slate-100 text-slate-800 font-semibold rounded-xl transition border border-slate-300 shadow-sm text-sm">
                         <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6 29.6 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 18.9 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.6 6 29.6 4 24 4c-7.6 0-14.1 4.3-17.7 10.7z"/><path fill="#4CAF50" d="M24 44c5.5 0 10.4-1.8 14.1-5l-6.5-5.5c-2 1.4-4.6 2.3-7.6 2.3-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.8 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.5 5.5C41.5 36 44 30.5 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
@@ -793,7 +800,7 @@
                     <!-- ── Party header: shows who you're about to play as ── -->
                     <div class="text-center">
                         <span class="hub-eyebrow" style="margin-bottom:8px;">Pull up a chair</span>
-                        <h2 class="font-display font-bold text-2xl text-white mt-2">DiceUp</h2>
+                        <h2 class="font-display font-bold text-2xl text-white mt-2">RichUp</h2>
                         <p class="text-sm text-[#9aa5b3] mt-1">Host a table or join one with a code — 2 to 6 players.</p>
                     </div>
 
@@ -900,12 +907,12 @@
         </section>
     </div>
 
-    <main class="flex-1 max-w-[1600px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start opacity-20" id="gameWorkspace">
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start opacity-20" id="gameWorkspace">
         
-        <section class="col-span-1 lg:col-span-8 flex justify-center">
+        <section class="col-span-1 lg:col-span-7 flex justify-center">
             <div id="boardContainer" class="monopoly-board">
                 <div class="board-center p-6 text-center select-none">
-                    <h1 class="font-display font-black text-4xl tracking-tight text-[#f5f1e8] opacity-20" style="position:relative;z-index:1;">DICEUP</h1>
+                    <h1 class="font-display font-black text-4xl tracking-tight text-[#f5f1e8] opacity-20" style="position:relative;z-index:1;">RICHUP</h1>
                     <p class="font-mono text-xs text-[#7c6af5] uppercase tracking-widest mt-2 opacity-40" style="position:relative;z-index:1;">World Cities Edition</p>
 
                     <div class="mt-8 flex gap-4 items-center justify-center" style="position:relative;z-index:1;">
@@ -916,7 +923,7 @@
             </div>
         </section>
 
-        <section class="col-span-1 lg:col-span-4 space-y-4">
+        <section class="col-span-1 lg:col-span-5 space-y-4">
             <div class="bg-[#1a2530] border border-[#263140] rounded-2xl p-6">
                 <div class="flex items-center justify-between border-b border-[#263140] pb-3 mb-4">
                     <h2 class="font-display font-bold text-lg text-white">Live Action Hub</h2>
@@ -974,7 +981,12 @@
 
             <div class="bg-[#1a2530] border border-[#263140] rounded-2xl p-6">
                 <h3 class="font-display font-bold text-md text-white mb-3">Player Ledger</h3>
-                <div id="playerLedger" class="space-y-2"></div>
+                <div id="playerLedger" class="space-y-2 pr-1"></div>
+            </div>
+
+            <div class="bg-[#1a2530] border border-[#263140] rounded-2xl p-6">
+                <h3 class="font-display font-bold text-md text-white mb-3">Your Assets</h3>
+                <div id="assetsPanel" class="space-y-3 pr-1"></div>
             </div>
         </section>
     </main>
@@ -1001,7 +1013,7 @@
     </div>
 
     <div id="propertyModal" class="hidden">
-        <div class="hub-panel w-full max-w-sm p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+        <div class="hub-panel w-full max-w-sm p-6 space-y-4">
             <div class="flex items-center justify-between pb-3" style="border-bottom:1px solid var(--hub-border-soft);">
                 <h3 id="propModalTitle" class="font-display text-xl font-bold" style="color:var(--hub-text-bright);"></h3>
                 <button id="closePropertyModalBtn" class="text-xl font-bold w-8 h-8 flex items-center justify-center rounded-lg transition" style="color:var(--hub-muted);">✕</button>
@@ -1039,13 +1051,9 @@
                         <div class="text-[10px] font-bold uppercase mb-1" style="color:var(--hub-muted);">Properties</div>
                         <div id="tradeOfferProps" class="flex flex-wrap"></div>
                     </div>
-                    <div>
+                    <div id="tradeOfferGoojfWrapper" class="hidden">
                         <div class="text-[10px] font-bold uppercase mb-1" style="color:var(--hub-muted);">Get Out of Jail Cards</div>
-                        <select id="tradeOfferGoojf" class="hub-input px-3 py-2 text-xs w-full" style="padding:6px 10px;">
-                            <option value="0">None</option>
-                            <option value="1">1 card</option>
-                            <option value="2">2 cards</option>
-                        </select>
+                        <div id="tradeOfferGoojf" class="flex flex-wrap"></div>
                     </div>
                 </div>
                 <!-- YOU REQUEST -->
@@ -1059,13 +1067,9 @@
                         <div class="text-[10px] font-bold uppercase mb-1" style="color:var(--hub-muted);">Properties</div>
                         <div id="tradeRequestProps" class="flex flex-wrap"></div>
                     </div>
-                    <div>
+                    <div id="tradeRequestGoojfWrapper" class="hidden">
                         <div class="text-[10px] font-bold uppercase mb-1" style="color:var(--hub-muted);">Get Out of Jail Cards</div>
-                        <select id="tradeRequestGoojf" class="hub-input px-3 py-2 text-xs w-full" style="padding:6px 10px;">
-                            <option value="0">None</option>
-                            <option value="1">1 card</option>
-                            <option value="2">2 cards</option>
-                        </select>
+                        <div id="tradeRequestGoojf" class="flex flex-wrap"></div>
                     </div>
                 </div>
             </div>
@@ -1099,11 +1103,11 @@
                 <p><strong class="text-white">Goal:</strong> Bankrupt every other player. Last tycoon standing wins.</p>
                 <div class="space-y-1.5">
                     <h4 class="font-bold text-[#9585f8] uppercase text-xs tracking-wider">Your Turn</h4>
-                    <p class="text-xs">Roll the dice to move around the board. Land on an unowned property, airport, or utility and you can buy it or send it to auction. Land on someone else's and you'll owe rent automatically. Rolling doubles gives you another turn — but three doubles in a row sends you straight to Jail.</p>
+                    <p class="text-xs">Roll the dice to move around the board. Land on an unowned property, railroad, or utility and you can buy it or send it to auction. Land on someone else's and you'll owe rent automatically. Rolling doubles gives you another turn — but three doubles in a row sends you straight to Jail.</p>
                 </div>
                 <div class="space-y-1.5">
                     <h4 class="font-bold text-[#9585f8] uppercase text-xs tracking-wider">Rent</h4>
-                    <p class="text-xs">Owning every property in a color group doubles the base rent, even with no houses built. Airport rent scales with how many airports you own; utility rent is a multiple of the dice roll (4× with one utility, 10× with both).</p>
+                    <p class="text-xs">Owning every property in a color group doubles the base rent, even with no houses built. Railroad rent scales with how many railroads you own; utility rent is a multiple of the dice roll (4× with one utility, 10× with both).</p>
                 </div>
                 <div class="space-y-1.5">
                     <h4 class="font-bold text-[#9585f8] uppercase text-xs tracking-wider">Building</h4>
@@ -1599,9 +1603,9 @@
         }
 
         const BOARD_DATA = [
-            { id: 0,  name: "START", type: "go", color: null, cost: null, rent: [0], group: "special" },
+            { id: 10,  name: "START", type: "go", color: null, cost: null, rent: [0], group: "special" },
             { id: 1,  name: "Salvador", type: "property", color: "#92400e", cost: 60, rent: [2, 10, 30, 90, 160, 250], houseCost: 50, group: "brown" },
-            { id: 2,  name: "Surprise", type: "chest", color: null, cost: null, rent: [0], group: "special" },
+            { id: 2,  name: "Community Chest", type: "chest", color: null, cost: null, rent: [0], group: "special" },
             { id: 3,  name: "Rio", type: "property", color: "#92400e", cost: 60, rent: [4, 20, 60, 180, 320, 450], houseCost: 50, group: "brown" },
             { id: 4,  name: "Income Tax", type: "tax", color: null, cost: null, rent: [200], group: "special" },
             { id: 5,  name: "TLV Airport", type: "railroad", color: "#475569", cost: 200, rent: [25, 50, 100, 200], group: "railroad" },
@@ -1609,17 +1613,17 @@
             { id: 7,  name: "Chance", type: "chance", color: null, cost: null, rent: [0], group: "special" },
             { id: 8,  name: "Haifa", type: "property", color: "#0284c7", cost: 100, rent: [6, 30, 90, 270, 400, 550], houseCost: 50, group: "lightblue" },
             { id: 9,  name: "Jerusalem", type: "property", color: "#0284c7", cost: 120, rent: [8, 40, 100, 300, 450, 600], houseCost: 50, group: "lightblue" },
-            { id: 10,  name: "JAIL", type: "jail", color: null, cost: null, rent: [0], group: "special" },
+            { id: 0, name: "JAIL", type: "jail", color: null, cost: null, rent: [0], group: "special" },
             { id: 11, name: "Venice", type: "property", color: "#db2777", cost: 140, rent: [10, 50, 150, 450, 625, 750], houseCost: 100, group: "pink" },
             { id: 12, name: "Electric Company", type: "utility", color: "#78716c", cost: 150, rent: [4, 10], group: "utility" },
             { id: 13, name: "Milan", type: "property", color: "#db2777", cost: 140, rent: [10, 50, 150, 450, 625, 750], houseCost: 100, group: "pink" },
             { id: 14, name: "Rome", type: "property", color: "#db2777", cost: 160, rent: [12, 60, 180, 500, 700, 900], houseCost: 100, group: "pink" },
             { id: 15, name: "MUC Airport", type: "railroad", color: "#475569", cost: 200, rent: [25, 50, 100, 200], group: "railroad" },
             { id: 16, name: "Frankfurt", type: "property", color: "#ea580c", cost: 180, rent: [14, 70, 200, 550, 750, 950], houseCost: 100, group: "orange" },
-            { id: 17, name: "Surprise", type: "chest", color: null, cost: null, rent: [0], group: "special" },
+            { id: 17, name: "Community Chest", type: "chest", color: null, cost: null, rent: [0], group: "special" },
             { id: 18, name: "Munich", type: "property", color: "#ea580c", cost: 180, rent: [14, 70, 200, 550, 750, 950], houseCost: 100, group: "orange" },
             { id: 19, name: "Berlin", type: "property", color: "#ea580c", cost: 200, rent: [16, 80, 220, 600, 800, 1000], houseCost: 100, group: "orange" },
-            { id: 20, name: "VACATION", type: "parking", color: null, cost: null, rent: [0], group: "special" },
+            { id: 30, name: "VACATION", type: "parking", color: null, cost: null, rent: [0], group: "special" },
             { id: 21, name: "Shenzhen", type: "property", color: "#e11d48", cost: 220, rent: [18, 90, 250, 700, 875, 1050], houseCost: 150, group: "red" },
             { id: 22, name: "Chance", type: "chance", color: null, cost: null, rent: [0], group: "special" },
             { id: 23, name: "Beijing", type: "property", color: "#e11d48", cost: 220, rent: [18, 90, 250, 700, 875, 1050], houseCost: 150, group: "red" },
@@ -1629,10 +1633,10 @@
             { id: 27, name: "Toulouse", type: "property", color: "#eab308", cost: 260, rent: [22, 110, 330, 800, 975, 1150], houseCost: 150, group: "yellow" },
             { id: 28, name: "Water Company", type: "utility", color: "#78716c", cost: 150, rent: [4, 10], group: "utility" },
             { id: 29, name: "Paris", type: "property", color: "#eab308", cost: 280, rent: [24, 120, 360, 850, 1025, 1200], houseCost: 150, group: "yellow" },
-            { id: 30, name: "GO TO JAIL", type: "gotojail", color: null, cost: null, rent: [0], group: "special" },
+            { id: 20, name: "GO TO JAIL", type: "gotojail", color: null, cost: null, rent: [0], group: "special" },
             { id: 31, name: "Liverpool", type: "property", color: "#16a34a", cost: 300, rent: [26, 130, 390, 900, 1100, 1275], houseCost: 200, group: "green" },
             { id: 32, name: "Manchester", type: "property", color: "#16a34a", cost: 300, rent: [26, 130, 390, 900, 1100, 1275], houseCost: 200, group: "green" },
-            { id: 33, name: "Surprise", type: "chest", color: null, cost: null, rent: [0], group: "special" },
+            { id: 33, name: "Community Chest", type: "chest", color: null, cost: null, rent: [0], group: "special" },
             { id: 34, name: "London", type: "property", color: "#16a34a", cost: 320, rent: [28, 150, 450, 1000, 1200, 1400], houseCost: 200, group: "green" },
             { id: 35, name: "JFK Airport", type: "railroad", color: "#475569", cost: 200, rent: [25, 50, 100, 200], group: "railroad" },
             { id: 36, name: "Chance", type: "chance", color: null, cost: null, rent: [0], group: "special" },
@@ -1648,10 +1652,10 @@
             { text: "Global Market Rally! Collect $150.", action: "cash", value: 150 },
             { text: "Aviation fuel surcharge. Pay $50.", action: "cash", value: -50 },
             { text: "Advance to START. Collect $200.", action: "advance_go" },
-            { text: "Advance to San Francisco. If you pass GO, collect $200.", action: "advance_to", target: 17 },
-            { text: "Advance to Liverpool. If you pass GO, collect $200.", action: "advance_to", target: 11 },
-            { text: "Advance to the nearest Airport. Pay double rent if unowned.", action: "advance_nearest_railroad" },
-            { text: "Advance to the nearest Airport. Pay double rent if unowned.", action: "advance_nearest_railroad" },
+            { text: "Advance to San Francisco. If you pass GO, collect $200.", action: "advance_to", target: 37 },
+            { text: "Advance to Liverpool. If you pass GO, collect $200.", action: "advance_to", target: 31 },
+            { text: "Advance to the nearest Railroad. Pay double rent if unowned.", action: "advance_nearest_railroad" },
+            { text: "Advance to the nearest Railroad. Pay double rent if unowned.", action: "advance_nearest_railroad" },
             { text: "Advance to the nearest Utility.", action: "advance_nearest_utility" },
             { text: "Bank dividend pays out. Collect $50.", action: "cash", value: 50 },
             { text: "Get Out of Jail Free — keep this card until needed.", action: "goojf" },
@@ -1725,7 +1729,7 @@
             return (p?.name || '?').charAt(0).toUpperCase();
         }
 
-        const CORNER_ICONS = { 0: '➜', 10: '🔒', 20: '🏖️', 30: '🚔' };
+        const CORNER_ICONS = { 10: '➜', 0: '🔒', 30: '🏖️', 20: '🚔' };
 
         const SPACE_ICONS = {
             1: '🇧🇷', 3: '🇧🇷',                         // brown: Brazil
@@ -1744,7 +1748,7 @@
             37: '🇺🇸', 39: '🇺🇸',                        // dark blue: USA
             2: '📦', 17: '📦', 33: '📦',                 // Community Chest
             7: '❓', 22: '❓', 36: '❓',                  // Chance
-            4: '💰', 18: '💎'                            // Income Tax, Luxury Tax
+            4: '💰', 38: '💎'                            // Income Tax, Luxury Tax
         };
 
         function sideForSpaceId(id) {
@@ -2132,6 +2136,7 @@
                 updateBoardTokens(state);
                 renderPropertyImprovements(state);
                 renderLedger(state);
+                renderAssetsPanel(state);
                 renderActivityLog(state);
                 updateTradeButtonVisibility(state);
 
@@ -2193,9 +2198,9 @@
                     stats: updatedStats,
                     updatedAt: new Date()
                 }, { merge: true });
-                if (won) showToast('⭐ Win recorded on the DiceUp leaderboard!', 'info', 3000);
+                if (won) showToast('⭐ Win recorded on the RichUp leaderboard!', 'info', 3000);
             } catch (err) {
-                console.warn('Could not record DiceUp result:', err);
+                console.warn('Could not record RichUp result:', err);
             }
         }
 
@@ -2217,7 +2222,7 @@
             const startingGoojf = {};
             orders.forEach(uid => {
                 startingBalances[uid] = startingCash;
-                startingPositions[uid] = 0;
+                startingPositions[uid] = 10;
                 startingJail[uid] = false;
                 startingBankrupt[uid] = false;
                 startingGoojf[uid] = 0;
@@ -2247,16 +2252,14 @@
         function updateBoardTokens(state) {
             document.querySelectorAll(".token-holder").forEach(h => h.innerHTML = "");
             const orders = state.playersOrder || [];
-            const activePlayerUid = orders[state.turnIndex];
             orders.forEach((uid, index) => {
                 const pos = state.playerPositions?.[uid] ?? 0;
                 const holder = document.getElementById(`tokens-space-${pos}`);
                 if (holder) {
                     const token = document.createElement("div");
-                    token.className = "avatar-token" + (uid === activePlayerUid ? " active-turn" : "");
+                    token.className = "avatar-token";
                     token.style.backgroundColor = `hsl(${PLAYER_HUES[index % PLAYER_HUES.length]}, 70%, 50%)`;
                     token.textContent = uid === localUser.uid ? "⭐" : (index + 1);
-                    token.title = uid === activePlayerUid ? `${shortNameFor(uid) || 'Player'} — current turn` : (shortNameFor(uid) || '');
                     holder.appendChild(token);
                 }
             });
@@ -2487,6 +2490,7 @@
         function renderLedger(state) {
             const ledger = document.getElementById("playerLedger");
             const orders = state.playersOrder || [];
+            ledger.classList.toggle("scrollable-list", orders.length >= 3);
             ledger.innerHTML = orders.map((uid, idx) => {
                 const bal = state.playerBalances?.[uid] ?? 0;
                 const pos = state.playerPositions?.[uid] ?? 0;
@@ -2515,6 +2519,61 @@
             }).join('');
         }
 
+        // Renders every player's owned properties (grouped per player) plus
+        // their Get Out of Jail Free card count, in a single always-scrollable
+        // panel beneath the ledger so it stays compact regardless of how many
+        // properties/players are in the game.
+        function renderAssetsPanel(state) {
+            const panel = document.getElementById("assetsPanel");
+            const orders = state.playersOrder || [];
+            const props = state.properties || {};
+
+            panel.innerHTML = orders.map((uid, idx) => {
+                const isBankrupt = state.playerBankrupt?.[uid] || false;
+                if (isBankrupt) return '';
+
+                const profile = state.playerProfiles?.[uid];
+                const displayName = uid === localUser.uid ? 'You' : (profile?.name || 'Player');
+                const ownedIds = Object.keys(props).filter(sid => props[sid] === uid);
+                const goojfCount = state.playerGoojf?.[uid] || 0;
+
+                const propRows = ownedIds.length === 0
+                    ? `<div class="asset-empty-note">No properties owned</div>`
+                    : ownedIds.map(sid => {
+                        const space = BOARD_DATA[parseInt(sid, 10)];
+                        const houses = state.propertyHouses?.[sid] || 0;
+                        const isMortgaged = !!state.propertyMortgaged?.[sid];
+                        let statusTag = '';
+                        if (isMortgaged) statusTag = `<span class="text-[9px] text-amber-400">MORTGAGED</span>`;
+                        else if (houses === 5) statusTag = `<span class="text-[9px] text-blue-400">HOTEL</span>`;
+                        else if (houses > 0) statusTag = `<span class="text-[9px] text-blue-300">${houses}🏠</span>`;
+                        return `
+                            <div class="asset-prop-row">
+                                <span class="flex items-center min-w-0 truncate" style="color:#e2e8f0;">
+                                    <span class="chip-dot" style="background:${space.color || '#64748b'};"></span>${space.name}
+                                </span>
+                                ${statusTag}
+                            </div>
+                        `;
+                    }).join('');
+
+                const goojfRow = goojfCount > 0
+                    ? `<div class="asset-goojf-row">🔓 ${goojfCount} Get Out of Jail Free card${goojfCount > 1 ? 's' : ''}</div>`
+                    : '';
+
+                return `
+                    <div class="asset-player-group">
+                        <div class="asset-player-header">
+                            <span style="color:hsl(${PLAYER_HUES[idx % 6]}, 80%, 65%);">${displayName}</span>
+                            <span>${ownedIds.length} propert${ownedIds.length === 1 ? 'y' : 'ies'}</span>
+                        </div>
+                        ${propRows}
+                        ${goojfRow}
+                    </div>
+                `;
+            }).join('');
+        }
+
         // Computes rent owed for a space given full game state context.
         // Handles: mortgaged (no rent), monopoly base-rent doubling (owning
         // full color set with 0 houses), railroad rent scaling by count
@@ -2538,7 +2597,7 @@
             if (houses > 0) return space.rent[houses] || space.rent[space.rent.length - 1];
 
             // No houses: check for monopoly (full color group owned) which
-            // doubles base rent per Diceup/Monopoly rules.
+            // doubles base rent per Richup/Monopoly rules.
             const sameGroupSpaces = BOARD_DATA.filter(s => s.group === space.group);
             const ownsAll = sameGroupSpaces.every(s => state.properties?.[s.id] === ownerUid);
             const baseRent = space.rent[0];
@@ -2567,12 +2626,14 @@
             const logEntries = [{ msg: `${myName} rolled ${d1}+${d2}${isDoubles ? ' (doubles!)' : ''} (${totalRoll}).` }];
 
             // Three doubles in a row sends you straight to jail, no
-            // movement on the third roll (Diceup/Monopoly rule).
+            // movement on the third roll (Richup/Monopoly rule).
             const priorStreak = cachedGameState.doublesStreak || 0;
             const newStreak = isDoubles ? priorStreak + 1 : 0;
 
             if (isDoubles && newStreak >= 3) {
-                updatedPositions[localUser.uid] = 10;
+                updatedPositions[localUser.uid] = 0;
+                updatedJail[localUser.uid] = true;
+                showToast("Three doubles in a row — straight to Jail!", "error");
                 logEntries.push({ msg: `${myName} rolled three doubles in a row and was sent to Jail!`, tag: 'rent' });
 
                 const payload = {
@@ -2597,7 +2658,7 @@
             const targetSpace = BOARD_DATA[nextPos];
             let sentToJail = false;
             if (targetSpace.type === "gotojail") {
-                nextPos = 10; // Instantly snap to prison ward
+                nextPos = 0; // Instantly snap to prison ward
                 updatedJail[localUser.uid] = true;
                 sentToJail = true;
                 showToast("Sent directly to Jail!", "error");
@@ -2639,18 +2700,18 @@
                     }
                 } else if (card.action === "advance_go") {
                     // Only collect $200 if not already on GO
-                    if (nextPos !== 0) {
+                    if (nextPos !== 10) {
                         updatedBalances[localUser.uid] = (updatedBalances[localUser.uid] || 0) + 200;
                         logEntries.push({ msg: `${myName} advanced to GO and collected $200.`, tag: 'buy' });
                     }
-                    nextPos = 0;
-                    updatedPositions[localUser.uid] = 0;
+                    nextPos = 10;
+                    updatedPositions[localUser.uid] = 10;
                 } else if (card.action === "advance_to") {
                     const dest = card.target;
                     const isJailDest = card.is_jail;
                     if (isJailDest) {
-                        nextPos = 10;
-                        updatedPositions[localUser.uid] = 10;
+                        nextPos = 0;
+                        updatedPositions[localUser.uid] = 0;
                         updatedJail[localUser.uid] = true;
                         sentToJail = true;
                         logEntries.push({ msg: `${myName} was sent to Jail by a card!`, tag: 'rent' });
@@ -2876,7 +2937,7 @@
             const d2 = Math.floor(Math.random() * 6) + 1;
 
             // Track failed attempts; after 3 failed rolls, must pay the fine
-            // and move (per Diceup/Monopoly jail rules).
+            // and move (per Richup/Monopoly jail rules).
             const priorAttempts = cachedGameState.jailAttempts?.[localUser.uid] || 0;
 
             if (d1 === d2) {
@@ -2962,76 +3023,6 @@
         // ─────────────────────────────────────────────
         let selectedPropertySpaceId = null;
 
-        // Builds the "how much will this earn me" breakdown shown inside the
-        // property modal — base rent, monopoly rent, and the full house/hotel
-        // ladder (cost to build vs. rent it then commands), or the railroad /
-        // utility equivalents.
-        function buildRentTableHTML(space, state) {
-            const houses = state.propertyHouses?.[space.id] || 0;
-            const rows = [];
-
-            if (space.type === "property") {
-                const sameGroupSpaces = BOARD_DATA.filter(s => s.group === space.group);
-                const ownsAll = state.properties &&
-                    sameGroupSpaces.every(s => state.properties[s.id] === state.properties[space.id]) &&
-                    !!state.properties[space.id];
-
-                rows.push(rentRow("Rent (base)", `$${space.rent[0]}`, houses === 0 && !ownsAll));
-                rows.push(rentRow("Rent (monopoly, no houses)", `$${space.rent[0] * 2}`, houses === 0 && ownsAll));
-
-                const houseLabels = ["1 house", "2 houses", "3 houses", "4 houses", "Hotel"];
-                for (let i = 1; i <= 5; i++) {
-                    const rentAtLevel = space.rent[i];
-                    if (rentAtLevel === undefined) continue;
-                    const buildCostSoFar = space.houseCost * i;
-                    const label = `${houseLabels[i - 1]} <span style="opacity:.65;">(costs $${space.houseCost}${i > 1 ? ` /ea, $${buildCostSoFar} total` : ''})</span>`;
-                    rows.push(rentRow(label, `$${rentAtLevel}`, houses === i));
-                }
-
-                return `
-                    <div class="pt-2 mt-2" style="border-top:1px solid var(--hub-border-soft);">
-                        <div class="text-[10px] font-bold uppercase tracking-wider mb-1.5" style="color:var(--hub-faint);">If a player lands here…</div>
-                        <div class="space-y-1">${rows.join('')}</div>
-                    </div>`;
-            }
-
-            if (space.type === "railroad") {
-                const labels = ["1 Airport", "2 Airports", "3 Airports", "4 Airports"];
-                const ownedCount = BOARD_DATA.filter(s => s.type === "railroad" && state.properties?.[s.id] === state.properties?.[space.id]).length;
-                space.rent.forEach((amt, i) => {
-                    rows.push(rentRow(labels[i] || `${i + 1} owned`, `$${amt}`, state.properties?.[space.id] && (ownedCount - 1) === i));
-                });
-                return `
-                    <div class="pt-2 mt-2" style="border-top:1px solid var(--hub-border-soft);">
-                        <div class="text-[10px] font-bold uppercase tracking-wider mb-1.5" style="color:var(--hub-faint);">Rent scales with airports owned</div>
-                        <div class="space-y-1">${rows.join('')}</div>
-                    </div>`;
-            }
-
-            if (space.type === "utility") {
-                rows.push(rentRow("1 Utility owned", "4 × dice roll", false));
-                rows.push(rentRow("2 Utilities owned", "10 × dice roll", false));
-                return `
-                    <div class="pt-2 mt-2" style="border-top:1px solid var(--hub-border-soft);">
-                        <div class="text-[10px] font-bold uppercase tracking-wider mb-1.5" style="color:var(--hub-faint);">Rent depends on the dice roll</div>
-                        <div class="space-y-1">${rows.join('')}</div>
-                    </div>`;
-            }
-
-            return '';
-        }
-
-        function rentRow(label, value, highlight) {
-            const style = highlight
-                ? 'background:rgba(124,106,245,0.15);border-radius:6px;padding:2px 6px;margin:0 -6px;'
-                : 'padding:2px 0;';
-            const valueColor = highlight ? 'color:var(--hub-text-bright);font-weight:700;' : '';
-            return `<div class="flex items-center justify-between text-[11px]" style="${style}">
-                        <span>${label}${highlight ? ' <span style="color:#a78bfa;">← current</span>' : ''}</span>
-                        <span style="${valueColor}">${value}</span>
-                    </div>`;
-        }
-
         function openPropertyModal(spaceId) {
             if (!cachedGameState) return;
             const space = BOARD_DATA[spaceId];
@@ -3060,7 +3051,7 @@
             if (space.type === "property" && houses > 0) {
                 infoLines.push(houses === 5 ? `Improvements: Hotel` : `Improvements: ${houses} house${houses > 1 ? 's' : ''}`);
             }
-            document.getElementById("propModalInfo").innerHTML = infoLines.map(l => `<div>${l}</div>`).join('') + buildRentTableHTML(space, state);
+            document.getElementById("propModalInfo").innerHTML = infoLines.map(l => `<div>${l}</div>`).join('');
 
             // ── Action buttons ──
             const buildBtn = document.getElementById("btnBuildHouse");
@@ -3176,7 +3167,7 @@
         }
 
         // Unmortgaging: pay back the mortgage value plus 10% interest,
-        // matching standard Monopoly/Diceup convention.
+        // matching standard Monopoly/Richup convention.
         async function unmortgageCurrentProperty() {
             if (!currentRoomCode || !cachedGameState || selectedPropertySpaceId === null) return;
             const currentPos = selectedPropertySpaceId;
@@ -3302,12 +3293,16 @@
         let tradeOfferSelectedProps = new Set(); // space IDs from my properties
         let tradeRequestSelectedProps = new Set(); // space IDs from target's properties
         let tradeTargetUid = null;
+        let tradeOfferGoojfCount = 0; // how many of MY GOOJF cards are in this offer
+        let tradeRequestGoojfCount = 0; // how many of THEIR GOOJF cards I'm requesting
 
         function openTradeModal() {
             if (!cachedGameState) return;
             tradeOfferSelectedProps.clear();
             tradeRequestSelectedProps.clear();
             tradeTargetUid = null;
+            tradeOfferGoojfCount = 0;
+            tradeRequestGoojfCount = 0;
 
             // Populate target player list
             const orders = cachedGameState.playersOrder || [];
@@ -3325,19 +3320,64 @@
                     tradeTargetUid = btn.dataset.uid;
                     targetList.querySelectorAll('.trade-target-btn').forEach(b => b.classList.remove('hub-btn-brass'));
                     btn.classList.add('hub-btn-brass');
+                    tradeOfferGoojfCount = 0;
+                    tradeRequestGoojfCount = 0;
                     renderTradePropertyChips();
+                    renderTradeGoojfChips();
                 });
             });
 
             document.getElementById("tradeOfferCash").value = 0;
             document.getElementById("tradeRequestCash").value = 0;
-            document.getElementById("tradeOfferGoojf").value = 0;
-            document.getElementById("tradeRequestGoojf").value = 0;
             document.getElementById("tradeOfferProps").innerHTML = '';
             document.getElementById("tradeRequestProps").innerHTML = '';
+            document.getElementById("tradeOfferGoojf").innerHTML = '';
+            document.getElementById("tradeRequestGoojf").innerHTML = '';
+            document.getElementById("tradeOfferGoojfWrapper").classList.add("hidden");
+            document.getElementById("tradeRequestGoojfWrapper").classList.add("hidden");
             document.getElementById("tradeModalError").classList.add("hidden");
             document.getElementById("tradeModal").classList.remove("hidden");
         }
+
+        // Builds a chip for each GOOJF card the relevant player actually
+        // holds (never more) — clicking a chip sets how many of that
+        // player's cards are included in the trade. Whole sections hide
+        // entirely if that player holds zero cards, instead of always
+        // showing a "0/1/2" picker regardless of real ownership.
+        function renderTradeGoojfChips() {
+            if (!tradeTargetUid || !cachedGameState) return;
+            const myGoojf = cachedGameState.playerGoojf?.[localUser.uid] || 0;
+            const theirGoojf = cachedGameState.playerGoojf?.[tradeTargetUid] || 0;
+
+            function makeGoojfChips(container, ownedCount, selectedCount, onPick) {
+                if (ownedCount === 0) return '';
+                const chips = [];
+                for (let n = 1; n <= ownedCount; n++) {
+                    const sel = n === selectedCount;
+                    chips.push(`<span class="trade-prop-chip${sel ? ' selected' : ''}" data-n="${n}">🔓 ${n}</span>`);
+                }
+                container.innerHTML = `<span class="trade-prop-chip${selectedCount === 0 ? ' selected' : ''}" data-n="0">None</span>` + chips.join('');
+                container.querySelectorAll('.trade-prop-chip').forEach(chip => {
+                    chip.addEventListener('click', () => {
+                        onPick(parseInt(chip.dataset.n, 10));
+                        renderTradeGoojfChips();
+                    });
+                });
+            }
+
+            const offerWrapper = document.getElementById("tradeOfferGoojfWrapper");
+            const requestWrapper = document.getElementById("tradeRequestGoojfWrapper");
+            offerWrapper.classList.toggle("hidden", myGoojf === 0);
+            requestWrapper.classList.toggle("hidden", theirGoojf === 0);
+
+            if (myGoojf > 0) {
+                makeGoojfChips(document.getElementById("tradeOfferGoojf"), myGoojf, tradeOfferGoojfCount, (n) => { tradeOfferGoojfCount = n; });
+            }
+            if (theirGoojf > 0) {
+                makeGoojfChips(document.getElementById("tradeRequestGoojf"), theirGoojf, tradeRequestGoojfCount, (n) => { tradeRequestGoojfCount = n; });
+            }
+        }
+
 
         function renderTradePropertyChips() {
             if (!tradeTargetUid || !cachedGameState) return;
@@ -3377,8 +3417,8 @@
             }
             const offerCash = parseInt(document.getElementById("tradeOfferCash").value, 10) || 0;
             const requestCash = parseInt(document.getElementById("tradeRequestCash").value, 10) || 0;
-            const offerGoojf = parseInt(document.getElementById("tradeOfferGoojf").value, 10) || 0;
-            const requestGoojf = parseInt(document.getElementById("tradeRequestGoojf").value, 10) || 0;
+            const offerGoojf = tradeOfferGoojfCount;
+            const requestGoojf = tradeRequestGoojfCount;
 
             // Validate
             const myBalance = cachedGameState.playerBalances?.[localUser.uid] || 0;
