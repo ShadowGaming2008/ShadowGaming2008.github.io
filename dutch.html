@@ -1271,6 +1271,7 @@
         <button id="openMyStatsBtn" class="hub-dropdown-item" style="border-top:none;">📊 My Stats</button>
         <button id="openSkinsBtn" class="hub-dropdown-item">🎴 Card Skins</button>
         <button id="openEditProfileBtn" class="hub-dropdown-item">✏️ Edit Profile</button>
+        <button id="addPasswordBtn" class="hub-dropdown-item hidden">🔐 Add password to account</button>
         <button id="headerSignOutBtn" class="hub-dropdown-item" style="color:#fb7185;">🚪 Sign out</button>
     </div>
 
@@ -1365,6 +1366,42 @@
                 <button id="emailAuthForgotBtn" class="transition underline" style="color:var(--hub-accent);">Forgot password?</button>
                 <button id="emailAuthToggleModeBtn" class="transition" style="color:var(--hub-muted);">Need an account? <span class="underline">Sign up</span></button>
             </div>
+        </div>
+    </div>
+
+    <!-- Add password modal — lets a Google-signed-in user link an
+         email/password credential to the SAME account, so they can log in
+         either way afterward (uid, and therefore their tokens/stats/etc,
+         stays identical). -->
+    <div id="addPasswordModal" class="hidden fixed inset-0 backdrop-blur-sm hub-modal-backdrop flex items-center justify-center p-4" style="z-index:50;">
+        <div class="hub-panel max-w-md w-full p-6 max-h-[85vh] overflow-y-auto space-y-5">
+            <div class="flex justify-between items-center pb-3" style="border-bottom:1px solid var(--hub-border-soft);">
+                <h3 class="font-hub-display text-xl font-bold" style="color:var(--hub-text-bright);">🔐 Add a Password</h3>
+                <button id="closeAddPasswordBtn" class="text-xl font-bold w-8 h-8 flex items-center justify-center rounded-lg transition" style="color:var(--hub-muted);" onmouseover="this.style.color='var(--hub-text)';this.style.background='var(--hub-panel-raised)'" onmouseout="this.style.color='var(--hub-muted)';this.style.background='transparent'">✕</button>
+            </div>
+
+            <p class="text-xs -mt-2" style="color:var(--hub-faint);">You signed up with Google. Add a password so you can also sign in with your email — same account, same stats and tokens either way.</p>
+
+            <div class="space-y-1.5">
+                <label class="block text-left text-xs font-bold uppercase tracking-wider" style="color:var(--hub-muted);">Email</label>
+                <input type="email" id="addPasswordEmailInput" disabled class="hub-input px-4 py-3" style="padding:11px 14px;opacity:0.7;">
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-left text-xs font-bold uppercase tracking-wider" style="color:var(--hub-muted);">New Password</label>
+                <input type="password" id="addPasswordInput" placeholder="••••••••" autocomplete="new-password" class="hub-input px-4 py-3" style="padding:11px 14px;">
+                <p class="text-left text-[11px]" style="color:var(--hub-faint);">At least 6 characters.</p>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="block text-left text-xs font-bold uppercase tracking-wider" style="color:var(--hub-muted);">Confirm Password</label>
+                <input type="password" id="addPasswordConfirmInput" placeholder="••••••••" autocomplete="new-password" class="hub-input px-4 py-3" style="padding:11px 14px;">
+            </div>
+
+            <p id="addPasswordError" class="hidden text-left text-xs text-rose-400 bg-rose-950/40 border border-rose-900 rounded-lg px-3 py-2"></p>
+            <p id="addPasswordSuccess" class="hidden text-left text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-900 rounded-lg px-3 py-2"></p>
+
+            <button id="addPasswordSubmitBtn" class="hub-btn hub-btn-brass w-full py-3 text-sm tracking-wide uppercase">Add Password</button>
         </div>
     </div>
 

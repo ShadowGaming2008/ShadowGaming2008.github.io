@@ -6,7 +6,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
     getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
-    createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail
+    createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail,
+    linkWithCredential, EmailAuthProvider
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
     getDatabase, ref, set, onDisconnect, onValue, remove, serverTimestamp as rtdbServerTimestamp
@@ -364,35 +365,54 @@ function renderAvatarInto(elId, photoURL, avatarEmoji) {
     }
 }
 
-async function loadOrCreateProfile(user) {
+async function loadOrCreateProfile(user, retryCount = 0) {
     const ref = doc(db, "users", user.uid);
-    const snap = await getDoc(ref);
-    if (snap.exists()) {
-        currentProfile = snap.data();
-        // Keep Google-sourced fields fresh in case they changed (new photo, etc).
-        const freshFields = { displayName: user.displayName || "", email: user.email || "", photoURL: user.photoURL || "" };
-        const needsUpdate = Object.entries(freshFields).some(([k, v]) => currentProfile[k] !== v);
-        if (needsUpdate) {
-            await updateDoc(ref, freshFields);
-            currentProfile = { ...currentProfile, ...freshFields };
+    try {
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+            currentProfile = snap.data();
+            // Keep Google-sourced fields fresh in case they changed (new photo, etc).
+            const freshFields = { displayName: user.displayName || "", email: user.email || "", photoURL: user.photoURL || "" };
+            const needsUpdate = Object.entries(freshFields).some(([k, v]) => currentProfile[k] !== v);
+            if (needsUpdate) {
+                await updateDoc(ref, freshFields);
+                currentProfile = { ...currentProfile, ...freshFields };
+            }
+        } else {
+            const newProfile = {
+                displayName: user.displayName || "",
+                email: user.email || "",
+                photoURL: user.photoURL || "",
+                username: user.displayName || (user.email ? user.email.split('@')[0] : "Player"),
+                avatarEmoji: null, // null = use Google photo; set to an emoji string to override
+                equippedSkin: 'classic',
+                stats: defaultStats(),
+                // Token economy — see TOKEN GATE section below. New accounts
+                // start with 3 free hosts. bypassTokens is Console-only (never
+                // settable from the client — see Firestore rules).
+                tokens: 3,
+                bypassTokens: false,
+                lastAdGrant: null
+            };
+            await setDoc(ref, newProfile);
+            currentProfile = newProfile;
         }
-    } else {
-        currentProfile = {
-            displayName: user.displayName || "",
-            email: user.email || "",
-            photoURL: user.photoURL || "",
-            username: user.displayName || (user.email ? user.email.split('@')[0] : "Player"),
-            avatarEmoji: null, // null = use Google photo; set to an emoji string to override
-            equippedSkin: 'classic',
-            stats: defaultStats(),
-            // Token economy — see TOKEN GATE section below. New accounts
-            // start with 3 free hosts. bypassTokens is Console-only (never
-            // settable from the client — see Firestore rules).
-            tokens: 3,
-            bypassTokens: false,
-            lastAdGrant: null
-        };
-        await setDoc(ref, currentProfile);
+    } catch (err) {
+        // Right after createUserWithEmailAndPassword, the ID token's claims
+        // can take a moment to propagate, so this getDoc/setDoc can
+        // occasionally hit a transient permission-denied even though the
+        // user IS signed in. Retry with backoff rather than leaving the
+        // account without a users/{uid} doc (and without its starting
+        // tokens) — this was silently failing for some email/password
+        // signups before this fix.
+        console.warn("loadOrCreateProfile failed (attempt", retryCount + 1, "):", err);
+        if (retryCount < 3) {
+            await new Promise(r => setTimeout(r, 800 * (retryCount + 1)));
+            return loadOrCreateProfile(user, retryCount + 1);
+        }
+        showToast("Couldn't set up your account profile — please refresh and try again.", 'error');
+        currentProfile = null;
+        return;
     }
     if (!currentProfile.stats) currentProfile.stats = defaultStats();
     if (currentProfile.stats.xp === undefined) currentProfile.stats.xp = 0;
@@ -444,6 +464,13 @@ function applySignedInUI() {
     renderAvatarInto("dropdownAvatar", photo, avatarEmoji);
     document.getElementById("dropdownName").textContent = name;
     document.getElementById("dropdownEmail").textContent = currentUser.email || "";
+
+    // Only offer "Add password" to accounts that signed in via Google and
+    // don't already have a password credential linked — an email/password
+    // account obviously already has one, and a Google account that already
+    // linked a password doesn't need to see this again.
+    const hasPasswordProvider = currentUser.providerData?.some(p => p.providerId === 'password');
+    document.getElementById("addPasswordBtn")?.classList.toggle("hidden", hasPasswordProvider);
 
     document.getElementById("landingSignInBtn").classList.add("hidden");
     document.getElementById("landingEmailSignInBtn").classList.add("hidden");
@@ -640,6 +667,108 @@ document.getElementById("emailAuthForgotBtn").addEventListener("click", async ()
     } catch (err) {
         showEmailAuthError(friendlyAuthErrorMessage(err, 'signin'));
     }
+});
+
+// ==========================================
+// Add Password (link email/password credential to an existing
+// Google-signed-in account, so the SAME uid — and therefore the same
+// tokens/stats/profile — can be reached via either sign-in method).
+// ==========================================
+function openAddPasswordModal() {
+    document.getElementById("accountDropdown").classList.add("hidden");
+    document.getElementById("addPasswordEmailInput").value = currentUser?.email || "";
+    document.getElementById("addPasswordInput").value = "";
+    document.getElementById("addPasswordConfirmInput").value = "";
+    hideAddPasswordError();
+    document.getElementById("addPasswordSuccess").classList.add("hidden");
+    document.getElementById("addPasswordModal").classList.remove("hidden");
+}
+
+function closeAddPasswordModal() {
+    document.getElementById("addPasswordModal").classList.add("hidden");
+}
+
+function showAddPasswordError(message) {
+    const el = document.getElementById("addPasswordError");
+    el.textContent = message;
+    el.classList.remove("hidden");
+}
+
+function hideAddPasswordError() {
+    document.getElementById("addPasswordError").classList.add("hidden");
+}
+
+document.getElementById("addPasswordBtn")?.addEventListener("click", openAddPasswordModal);
+document.getElementById("closeAddPasswordBtn").addEventListener("click", closeAddPasswordModal);
+document.getElementById("addPasswordModal").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("addPasswordModal")) closeAddPasswordModal();
+});
+
+document.getElementById("addPasswordSubmitBtn").addEventListener("click", async () => {
+    hideAddPasswordError();
+    document.getElementById("addPasswordSuccess").classList.add("hidden");
+
+    if (!currentUser) { closeAddPasswordModal(); return; }
+
+    const email = currentUser.email;
+    const password = document.getElementById("addPasswordInput").value;
+    const confirm = document.getElementById("addPasswordConfirmInput").value;
+
+    if (!email) {
+        showAddPasswordError("Your account doesn't have an email address on file, so a password can't be linked to it.");
+        return;
+    }
+    if (!password || password.length < 6) {
+        showAddPasswordError("Password should be at least 6 characters.");
+        return;
+    }
+    if (password !== confirm) {
+        showAddPasswordError("Passwords don't match.");
+        return;
+    }
+
+    const submitBtn = document.getElementById("addPasswordSubmitBtn");
+    submitBtn.disabled = true;
+    const originalLabel = submitBtn.textContent;
+    submitBtn.textContent = "Adding...";
+
+    try {
+        const credential = EmailAuthProvider.credential(email, password);
+        await linkWithCredential(currentUser, credential);
+        document.getElementById("addPasswordBtn")?.classList.add("hidden");
+        const successEl = document.getElementById("addPasswordSuccess");
+        successEl.textContent = "Password added! You can now sign in with either Google or your email and this password.";
+        successEl.classList.remove("hidden");
+        showToast("Password added to your account.", 'success');
+        setTimeout(closeAddPasswordModal, 2000);
+    } catch (err) {
+        // auth/provider-already-linked / auth/credential-already-in-use:
+        // this exact email/password pair is already tied to an account
+        // (possibly a different one) — surface a clear message rather than
+        // the raw Firebase error string.
+        const code = err && err.code;
+        if (code === 'auth/provider-already-linked') {
+            showAddPasswordError("This account already has a password set.");
+        } else if (code === 'auth/credential-already-in-use' || code === 'auth/email-already-in-use') {
+            showAddPasswordError("Another account is already using this email/password combination.");
+        } else if (code === 'auth/weak-password') {
+            showAddPasswordError("Password should be at least 6 characters.");
+        } else if (code === 'auth/requires-recent-login') {
+            showAddPasswordError("For security, please sign out and back in with Google, then try adding a password again.");
+        } else {
+            showAddPasswordError("Couldn't add password — please try again.");
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalLabel;
+    }
+});
+
+document.getElementById("addPasswordInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") document.getElementById("addPasswordConfirmInput").focus();
+});
+document.getElementById("addPasswordConfirmInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") document.getElementById("addPasswordSubmitBtn").click();
 });
 
 document.getElementById("headerSignOutBtn").addEventListener("click", async () => {

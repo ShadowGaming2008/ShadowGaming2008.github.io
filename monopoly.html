@@ -692,6 +692,7 @@
             </div>
         </div>
         <button id="openEditProfileBtn" class="hub-dropdown-item" style="border-top:none;">✏️ Edit Profile</button>
+        <button id="addPasswordBtn" class="hub-dropdown-item hidden">🔐 Add password to account</button>
         <button id="headerSignOutBtn" class="hub-dropdown-item" style="color:#fb7185;">🚪 Sign out</button>
     </div>
 
@@ -748,6 +749,34 @@
                 <button id="emailAuthForgotBtn" class="transition underline" style="color:var(--hub-accent);">Forgot password?</button>
                 <button id="emailAuthToggleModeBtn" class="transition" style="color:var(--hub-muted);">Need an account? <span class="underline">Sign up</span></button>
             </div>
+        </div>
+    </div>
+
+    <!-- Add password modal — lets a Google-signed-in user link an
+         email/password credential to the SAME account/uid. -->
+    <div id="addPasswordModal" class="hidden fixed inset-0 backdrop-blur-sm hub-modal-backdrop flex items-center justify-center p-4" style="z-index:50;">
+        <div class="hub-panel max-w-md w-full p-6 max-h-[85vh] overflow-y-auto space-y-5">
+            <div class="flex justify-between items-center pb-3" style="border-bottom:1px solid var(--hub-border-soft);">
+                <h3 class="font-hub-display text-xl font-bold" style="color:var(--hub-text-bright);">🔐 Add a Password</h3>
+                <button id="closeAddPasswordBtn" class="text-xl font-bold w-8 h-8 flex items-center justify-center rounded-lg transition" style="color:var(--hub-muted);" onmouseover="this.style.color='var(--hub-text)';this.style.background='var(--hub-panel-raised)'" onmouseout="this.style.color='var(--hub-muted)';this.style.background='transparent'">✕</button>
+            </div>
+            <p class="text-xs -mt-2" style="color:var(--hub-faint);">You signed up with Google. Add a password so you can also sign in with your email — same account, same stats and tokens either way.</p>
+            <div class="space-y-1.5">
+                <label class="block text-left text-xs font-bold uppercase tracking-wider" style="color:var(--hub-muted);">Email</label>
+                <input type="email" id="addPasswordEmailInput" disabled class="hub-input px-4 py-3" style="padding:11px 14px;opacity:0.7;">
+            </div>
+            <div class="space-y-1.5">
+                <label class="block text-left text-xs font-bold uppercase tracking-wider" style="color:var(--hub-muted);">New Password</label>
+                <input type="password" id="addPasswordInput" placeholder="••••••••" autocomplete="new-password" class="hub-input px-4 py-3" style="padding:11px 14px;">
+                <p class="text-left text-[11px]" style="color:var(--hub-faint);">At least 6 characters.</p>
+            </div>
+            <div class="space-y-1.5">
+                <label class="block text-left text-xs font-bold uppercase tracking-wider" style="color:var(--hub-muted);">Confirm Password</label>
+                <input type="password" id="addPasswordConfirmInput" placeholder="••••••••" autocomplete="new-password" class="hub-input px-4 py-3" style="padding:11px 14px;">
+            </div>
+            <p id="addPasswordError" class="hidden text-left text-xs text-rose-400 bg-rose-950/40 border border-rose-900 rounded-lg px-3 py-2"></p>
+            <p id="addPasswordSuccess" class="hidden text-left text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-900 rounded-lg px-3 py-2"></p>
+            <button id="addPasswordSubmitBtn" class="hub-btn hub-btn-brass w-full py-3 text-sm tracking-wide uppercase">Add Password</button>
         </div>
     </div>
 
@@ -1176,7 +1205,8 @@
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import {
             getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut,
-            createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail
+            createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail,
+            linkWithCredential, EmailAuthProvider
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         // ── Firebase init ──────────────────────────────────────────────
@@ -1257,25 +1287,42 @@
             return { gamesPlayed: 0, gamesWon: 0, totalScore: 0, bestScore: null, totalRounds: 0, xp: 0 };
         }
 
-        async function subscribeToProfile(user) {
+        async function subscribeToProfile(user, retryCount = 0) {
             if (profileUnsub) { profileUnsub(); profileUnsub = null; }
             const ref = doc(db, 'users', user.uid);
-            const snap = await getDoc(ref);
-            if (!snap.exists()) {
-                await setDoc(ref, {
-                    displayName: user.displayName || '',
-                    email: user.email || '',
-                    photoURL: user.photoURL || '',
-                    username: user.displayName || (user.email ? user.email.split('@')[0] : 'Player'),
-                    avatarEmoji: null,
-                    stats: defaultStats(),
-                    // Token economy — shared with Dutch/app.js via the same
-                    // users/{uid} doc and Firestore rules. New accounts get
-                    // 3 free hosts; bypassTokens is Console-only.
-                    tokens: 3,
-                    bypassTokens: false,
-                    lastAdGrant: null
-                });
+            try {
+                const snap = await getDoc(ref);
+                if (!snap.exists()) {
+                    await setDoc(ref, {
+                        displayName: user.displayName || '',
+                        email: user.email || '',
+                        photoURL: user.photoURL || '',
+                        username: user.displayName || (user.email ? user.email.split('@')[0] : 'Player'),
+                        avatarEmoji: null,
+                        stats: defaultStats(),
+                        // Token economy — shared with Dutch/app.js via the same
+                        // users/{uid} doc and Firestore rules. New accounts get
+                        // 3 free hosts; bypassTokens is Console-only.
+                        tokens: 3,
+                        bypassTokens: false,
+                        lastAdGrant: null
+                    });
+                }
+            } catch (err) {
+                // Right after createUserWithEmailAndPassword, the ID token's
+                // claims can take a moment to propagate, so the very first
+                // getDoc/setDoc here can occasionally hit a transient
+                // permission-denied even though the user IS signed in. Retry
+                // a couple of times with a short backoff before giving up —
+                // otherwise this fails silently and the account never gets
+                // its users/{uid} doc (and never gets its 3 starting tokens).
+                console.warn('subscribeToProfile failed (attempt', retryCount + 1, '):', err);
+                if (retryCount < 3) {
+                    setTimeout(() => subscribeToProfile(user, retryCount + 1), 800 * (retryCount + 1));
+                } else {
+                    showToast("Couldn't set up your account profile — please refresh and try again.", 'error');
+                }
+                return;
             }
             profileUnsub = onSnapshot(ref, s => {
                 if (!s.exists()) return;
@@ -1317,6 +1364,10 @@
             if (user) {
                 signInBtn.classList.add('hidden');
                 accountBtn.classList.remove('hidden');
+                // Only offer "Add password" to accounts without an existing
+                // password credential linked (e.g. signed in via Google).
+                const hasPasswordProvider = user.providerData?.some(p => p.providerId === 'password');
+                document.getElementById('addPasswordBtn')?.classList.toggle('hidden', hasPasswordProvider);
             } else {
                 signInBtn.classList.remove('hidden');
                 accountBtn.classList.add('hidden');
@@ -1341,6 +1392,75 @@
         document.getElementById('headerSignOutBtn').addEventListener('click', () => {
             document.getElementById('accountDropdown').classList.add('hidden');
             signOut(auth);
+        });
+
+        // ── Add Password (link email/password to an existing Google
+        // account, same uid, same tokens/stats/profile either way) ──
+        function openAddPasswordModal() {
+            document.getElementById('accountDropdown').classList.add('hidden');
+            document.getElementById('addPasswordEmailInput').value = localUser?.email || '';
+            document.getElementById('addPasswordInput').value = '';
+            document.getElementById('addPasswordConfirmInput').value = '';
+            document.getElementById('addPasswordError').classList.add('hidden');
+            document.getElementById('addPasswordSuccess').classList.add('hidden');
+            document.getElementById('addPasswordModal').classList.remove('hidden');
+        }
+        function closeAddPasswordModal() {
+            document.getElementById('addPasswordModal').classList.add('hidden');
+        }
+        function showAddPasswordError(msg) {
+            const el = document.getElementById('addPasswordError');
+            el.textContent = msg;
+            el.classList.remove('hidden');
+        }
+        document.getElementById('addPasswordBtn')?.addEventListener('click', openAddPasswordModal);
+        document.getElementById('closeAddPasswordBtn').addEventListener('click', closeAddPasswordModal);
+        document.getElementById('addPasswordModal').addEventListener('click', e => {
+            if (e.target.id === 'addPasswordModal') closeAddPasswordModal();
+        });
+        document.getElementById('addPasswordSubmitBtn').addEventListener('click', async () => {
+            document.getElementById('addPasswordError').classList.add('hidden');
+            document.getElementById('addPasswordSuccess').classList.add('hidden');
+            if (!localUser || localUser.isGuest) { closeAddPasswordModal(); return; }
+
+            const email = localUser.email;
+            const password = document.getElementById('addPasswordInput').value;
+            const confirm = document.getElementById('addPasswordConfirmInput').value;
+
+            if (!email) { showAddPasswordError("Your account doesn't have an email on file."); return; }
+            if (!password || password.length < 6) { showAddPasswordError('Password should be at least 6 characters.'); return; }
+            if (password !== confirm) { showAddPasswordError("Passwords don't match."); return; }
+
+            const btn = document.getElementById('addPasswordSubmitBtn');
+            btn.disabled = true;
+            const originalLabel = btn.textContent;
+            btn.textContent = 'Adding...';
+            try {
+                const credential = EmailAuthProvider.credential(email, password);
+                await linkWithCredential(localUser, credential);
+                document.getElementById('addPasswordBtn')?.classList.add('hidden');
+                const successEl = document.getElementById('addPasswordSuccess');
+                successEl.textContent = 'Password added! You can now sign in with either Google or your email and this password.';
+                successEl.classList.remove('hidden');
+                showToast('Password added to your account.', 'success');
+                setTimeout(closeAddPasswordModal, 2000);
+            } catch (err) {
+                const code = err && err.code;
+                if (code === 'auth/provider-already-linked') showAddPasswordError('This account already has a password set.');
+                else if (code === 'auth/credential-already-in-use' || code === 'auth/email-already-in-use') showAddPasswordError('Another account is already using this email/password combination.');
+                else if (code === 'auth/weak-password') showAddPasswordError('Password should be at least 6 characters.');
+                else if (code === 'auth/requires-recent-login') showAddPasswordError('For security, please sign out and back in with Google, then try again.');
+                else showAddPasswordError("Couldn't add password — please try again.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalLabel;
+            }
+        });
+        document.getElementById('addPasswordInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') document.getElementById('addPasswordConfirmInput').focus();
+        });
+        document.getElementById('addPasswordConfirmInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') document.getElementById('addPasswordSubmitBtn').click();
         });
 
         // ── Google / email auth ──

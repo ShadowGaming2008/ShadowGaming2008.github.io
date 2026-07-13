@@ -467,6 +467,42 @@
 
             <button id="profileSaveBtn" class="btn btn-brass w-full">Save Changes</button>
             <p id="profileSavedHint" class="is-hidden text-center text-xs text-emerald-400">✓ Profile updated — synced everywhere</p>
+
+            <div id="addPasswordSection" class="is-hidden pt-2" style="border-top:1px solid #232d38;">
+                <button id="openAddPasswordBtn" class="text-left text-xs text-[#7c6af5] hover:text-[#9585f8] transition underline bg-transparent border-none cursor-pointer">🔐 Add a password to this account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add password modal — lets a Google-signed-in user link an
+         email/password credential to the SAME account/uid, so they can
+         also sign in with email afterward. -->
+    <div id="addPasswordModal" class="modal-backdrop is-hidden">
+        <div class="modal-box space-y-5">
+            <div class="flex items-center justify-between">
+                <h2 class="text-2xl font-bold text-[#f5f1e8]">Add a Password</h2>
+                <button id="closeAddPasswordBtn" class="text-[#56606d] hover:text-[#e8e3d5] text-xl font-bold w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#0d1319] transition bg-transparent border-none cursor-pointer">✕</button>
+            </div>
+            <p class="text-[#9aa5b3] text-sm -mt-3">You signed up with Google. Add a password so you can also sign in with your email — same account, same profile either way.</p>
+
+            <div class="space-y-1.5">
+                <label class="block text-left text-xs font-bold text-[#9aa5b3] uppercase tracking-wider">Email</label>
+                <input type="email" id="addPasswordEmailInput" disabled style="opacity:0.7;" />
+            </div>
+            <div class="space-y-1.5">
+                <label class="block text-left text-xs font-bold text-[#9aa5b3] uppercase tracking-wider">New Password</label>
+                <input type="password" id="addPasswordInput" placeholder="••••••••" autocomplete="new-password" />
+                <p class="text-left text-[11px] text-[#56606d]">At least 6 characters.</p>
+            </div>
+            <div class="space-y-1.5">
+                <label class="block text-left text-xs font-bold text-[#9aa5b3] uppercase tracking-wider">Confirm Password</label>
+                <input type="password" id="addPasswordConfirmInput" placeholder="••••••••" autocomplete="new-password" />
+            </div>
+
+            <p id="addPasswordError" class="is-hidden text-left text-xs text-rose-400 bg-rose-950/40 border border-rose-900 rounded-lg px-3 py-2"></p>
+            <p id="addPasswordSuccess" class="is-hidden text-left text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-900 rounded-lg px-3 py-2"></p>
+
+            <button id="addPasswordSubmitBtn" class="btn btn-brass w-full">Add Password</button>
         </div>
     </div>
 
@@ -479,7 +515,8 @@
         import {
             getAuth, GoogleAuthProvider, signInWithPopup,
             signOut, onAuthStateChanged,
-            createUserWithEmailAndPassword, signInWithEmailAndPassword
+            createUserWithEmailAndPassword, signInWithEmailAndPassword,
+            linkWithCredential, EmailAuthProvider
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
         // ─────────────────────────────────────────────
@@ -649,20 +686,42 @@
         // Subscribes live to users/{uid} so a nickname/avatar change made in
         // Dutch or Chat (or any other game sharing this doc) reflects here
         // instantly, and vice versa. Creates the doc on first sign-in.
-        async function subscribeToProfile(user) {
+        async function subscribeToProfile(user, retryCount = 0) {
             if (profileUnsub) { profileUnsub(); profileUnsub = null; }
             const ref = doc(db, 'users', user.uid);
 
-            const snap = await getDoc(ref);
-            if (!snap.exists()) {
-                await setDoc(ref, {
-                    displayName: user.displayName || '',
-                    email: user.email || '',
-                    photoURL: user.photoURL || '',
-                    username: user.displayName || (user.email ? user.email.split('@')[0] : 'Player'),
-                    avatarEmoji: null,
-                    stats: defaultStats()
-                });
+            try {
+                const snap = await getDoc(ref);
+                if (!snap.exists()) {
+                    await setDoc(ref, {
+                        displayName: user.displayName || '',
+                        email: user.email || '',
+                        photoURL: user.photoURL || '',
+                        username: user.displayName || (user.email ? user.email.split('@')[0] : 'Player'),
+                        avatarEmoji: null,
+                        stats: defaultStats(),
+                        // Token economy — shared with Dutch/Monopoly via the
+                        // same users/{uid} doc and Firestore rules. This was
+                        // previously missing here, so an account whose very
+                        // first sign-in happened on this page never got its
+                        // starting tokens. New accounts get 3 free hosts;
+                        // bypassTokens is Console-only.
+                        tokens: 3,
+                        bypassTokens: false,
+                        lastAdGrant: null
+                    });
+                }
+            } catch (err) {
+                // Right after createUserWithEmailAndPassword, the ID token's
+                // claims can take a moment to propagate, so this can
+                // occasionally hit a transient permission-denied even
+                // though the user IS signed in. Retry with backoff rather
+                // than silently leaving the account without a doc.
+                console.warn('subscribeToProfile failed (attempt', retryCount + 1, '):', err);
+                if (retryCount < 3) {
+                    setTimeout(() => subscribeToProfile(user, retryCount + 1), 800 * (retryCount + 1));
+                }
+                return;
             }
 
             profileUnsub = onSnapshot(ref, s => {
@@ -683,6 +742,10 @@
             profileNameInput.value = currentProfile?.username || currentUser?.displayName || '';
             renderProfileAvatarGrid();
             hide(profileSavedHint);
+            // Only offer "Add password" to accounts without an existing
+            // password credential linked (i.e. signed in via Google).
+            const hasPasswordProvider = currentUser?.providerData?.some(p => p.providerId === 'password');
+            document.getElementById('addPasswordSection')?.classList.toggle('is-hidden', !!hasPasswordProvider);
             show(profileEditModal);
             setTimeout(() => profileNameInput.focus(), 50);
         }
@@ -735,6 +798,70 @@
                 hide(profileSavedHint);
                 closeProfileEditModal();
             }, 900);
+        });
+
+        // ── Add Password (link email/password to an existing Google
+        // account — same uid, same profile either way afterward) ──
+        const addPasswordModal = document.getElementById('addPasswordModal');
+        function openAddPasswordModal() {
+            document.getElementById('addPasswordEmailInput').value = currentUser?.email || '';
+            document.getElementById('addPasswordInput').value = '';
+            document.getElementById('addPasswordConfirmInput').value = '';
+            hide(document.getElementById('addPasswordError'));
+            hide(document.getElementById('addPasswordSuccess'));
+            show(addPasswordModal);
+        }
+        function closeAddPasswordModal() { hide(addPasswordModal); }
+
+        document.getElementById('openAddPasswordBtn')?.addEventListener('click', openAddPasswordModal);
+        document.getElementById('closeAddPasswordBtn').addEventListener('click', closeAddPasswordModal);
+        addPasswordModal.addEventListener('click', e => { if (e.target === addPasswordModal) closeAddPasswordModal(); });
+
+        document.getElementById('addPasswordSubmitBtn').addEventListener('click', async () => {
+            const errEl = document.getElementById('addPasswordError');
+            const successEl = document.getElementById('addPasswordSuccess');
+            hide(errEl);
+            hide(successEl);
+            if (!currentUser) { closeAddPasswordModal(); return; }
+
+            const email = currentUser.email;
+            const password = document.getElementById('addPasswordInput').value;
+            const confirm = document.getElementById('addPasswordConfirmInput').value;
+
+            const showErr = (msg) => { errEl.textContent = msg; show(errEl); };
+
+            if (!email) { showErr("Your account doesn't have an email on file."); return; }
+            if (!password || password.length < 6) { showErr('Password should be at least 6 characters.'); return; }
+            if (password !== confirm) { showErr("Passwords don't match."); return; }
+
+            const btn = document.getElementById('addPasswordSubmitBtn');
+            btn.disabled = true;
+            const originalLabel = btn.textContent;
+            btn.textContent = 'Adding...';
+            try {
+                const credential = EmailAuthProvider.credential(email, password);
+                await linkWithCredential(currentUser, credential);
+                document.getElementById('addPasswordSection')?.classList.add('is-hidden');
+                successEl.textContent = 'Password added! You can now sign in with either Google or your email and this password.';
+                show(successEl);
+                setTimeout(closeAddPasswordModal, 2000);
+            } catch (err) {
+                const code = err && err.code;
+                if (code === 'auth/provider-already-linked') showErr('This account already has a password set.');
+                else if (code === 'auth/credential-already-in-use' || code === 'auth/email-already-in-use') showErr('Another account is already using this email/password combination.');
+                else if (code === 'auth/weak-password') showErr('Password should be at least 6 characters.');
+                else if (code === 'auth/requires-recent-login') showErr('For security, please sign out and back in with Google, then try again.');
+                else showErr("Couldn't add password — please try again.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalLabel;
+            }
+        });
+        document.getElementById('addPasswordInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') document.getElementById('addPasswordConfirmInput').focus();
+        });
+        document.getElementById('addPasswordConfirmInput').addEventListener('keydown', e => {
+            if (e.key === 'Enter') document.getElementById('addPasswordSubmitBtn').click();
         });
     </script>
 </body>
