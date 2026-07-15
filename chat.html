@@ -2381,10 +2381,15 @@ function appendMessage(m, msgRef) {
             ${msgRef ? `<button class="msg-action-btn is-delete" data-action="delete" title="Delete">🗑</button>` : ''}
         </div>`;
 
-    // Build reply-quote block if this message is a reply
+    // Build reply-quote block if this message is a reply. The quoted
+    // sender's name is resolved live (same as the main message sender)
+    // so a rename shows up on old reply quotes too, not just new ones.
+    const replyLiveName = m.replyTo
+        ? getLiveSenderProfile(m.replyTo.senderId, { name: m.replyTo.senderName }).name
+        : null;
     const replyHtml = m.replyTo
         ? `<div class="msg-reply-quote" data-reply-id="${escHtml(m.replyTo.msgId || '')}">
-               <span class="msg-reply-quote-name">${escHtml(m.replyTo.senderName)}</span>
+               <span class="msg-reply-quote-name">${escHtml(replyLiveName)}</span>
                <span class="msg-reply-quote-text">${escHtml(m.replyTo.text)}</span>
            </div>` : '';
 
@@ -2639,7 +2644,10 @@ function startTyping() {
     if (!tRef) return;
     if (!isCurrentlyTyping) {
         isCurrentlyTyping = true;
-        set(tRef, true);
+        set(tRef, true).catch(err => {
+            console.warn('Typing indicator write failed (check Realtime Database rules):', err.code || err);
+            isCurrentlyTyping = false;
+        });
         onDisconnect(tRef).remove();
     }
     clearTimeout(typingTimeout);
@@ -2689,6 +2697,8 @@ function subscribeTyping() {
         } else {
             typingIndicator.innerHTML = `<span class="typing-dots"><span></span><span></span><span></span></span> Several people are typing…`;
         }
+    }, (err) => {
+        console.warn('Typing indicator read failed (check Realtime Database rules):', err.code || err);
     });
 }
 
