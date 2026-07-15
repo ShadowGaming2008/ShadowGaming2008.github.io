@@ -1174,6 +1174,54 @@ let myDmsUnsub = null;           // listens to users/{uid}/dms to populate DM li
 let myDms = {};                   // dmId -> { otherUid, otherName, otherAvatarEmoji, otherPhotoURL }
 
 let activeContext = null;        // { type: 'server'|'dm', id: string, channelId?: string }
+// ── Live profile cache ──────────────────────────────────────────────────
+// Server/DM docs only store a COPY of a user's name/avatar (members.{uid},
+// otherName, etc.), refreshed only when that user happens to be signed in
+// and renames while this server/DM is in their own list. That copy can go
+// stale forever otherwise. To guarantee every name/avatar shown anywhere
+// (member list, messages incl. past ones, reply quotes, typing indicator)
+// is always current, we live-subscribe to users/{uid} directly for every
+// uid currently visible, and prefer that over any copied field.
+let liveProfiles = {};          // uid -> { username, avatarEmoji, photoURL, profileColor }
+let liveProfileUnsubs = {};     // uid -> unsubscribe fn
+
+function ensureLiveProfileSubscribed(uid) {
+    if (!uid || liveProfileUnsubs[uid]) return;
+    liveProfileUnsubs[uid] = onSnapshot(doc(db, 'users', uid), (snap) => {
+        if (!snap.exists()) return;
+        const data = snap.data();
+        const prev = liveProfiles[uid];
+        liveProfiles[uid] = {
+            username: data.username, avatarEmoji: data.avatarEmoji,
+            photoURL: data.photoURL, profileColor: data.profileColor
+        };
+        // Skip the very first delivery (that's just priming the cache with
+        // no prior value to compare against) — nothing needs repainting yet.
+        if (!prev) return;
+        const changed = prev.username !== liveProfiles[uid].username
+            || prev.avatarEmoji !== liveProfiles[uid].avatarEmoji
+            || prev.photoURL !== liveProfiles[uid].photoURL
+            || JSON.stringify(prev.profileColor || null) !== JSON.stringify(liveProfiles[uid].profileColor || null);
+        if (!changed) return;
+        if (activeContext?.type === 'server') renderMemberList();
+        if (lastRenderedMessages.length) renderMessagesFromCache();
+    });
+}
+
+// Subscribes to every uid we currently have visible in the member list or
+// DM list, and unsubscribes any we no longer need (left server, DM removed).
+function syncLiveProfileSubscriptions(neededUids) {
+    const needed = new Set(neededUids.filter(Boolean));
+    needed.forEach(uid => ensureLiveProfileSubscribed(uid));
+    Object.keys(liveProfileUnsubs).forEach(uid => {
+        if (!needed.has(uid)) {
+            liveProfileUnsubs[uid]();
+            delete liveProfileUnsubs[uid];
+            delete liveProfiles[uid];
+        }
+    });
+}
+
 let activeMessagesUnsub = null;
 let activeMetaUnsub = null;      // listens to the server/dm doc itself (members map)
 let activeChannelsUnsub = null;  // listens to servers/{id}/channels
@@ -1347,6 +1395,9 @@ onAuthStateChanged(auth, async (user) => {
         currentUser = null;
         authGate.classList.remove('is-hidden');
         appRoot.style.display = 'none';
+        Object.values(liveProfileUnsubs).forEach(unsub => unsub());
+        liveProfileUnsubs = {};
+        liveProfiles = {};
         return;
     }
     currentUser = user;
@@ -1573,6 +1624,7 @@ function subscribeMyDms() {
     myDmsUnsub = onSnapshot(collection(db, 'users', currentUser.uid, 'dms'), (snap) => {
         myDms = {};
         snap.forEach(d => { myDms[d.id] = d.data(); });
+        Object.values(myDms).forEach(d => ensureLiveProfileSubscribed(d.otherUid));
         if (activeContext?.type !== 'server') renderDmList();
         // The other person's name/avatar/color may have just changed —
         // repaint any already-loaded messages in the open DM so they
@@ -1609,14 +1661,19 @@ function renderDmList() {
         const d = myDms[id];
         const isActive = activeContext?.type === 'dm' && activeContext.id === id;
         const isOnline = !!onlineUids[d.otherUid];
-        const avatar = buildAvatarStyle(d.otherName, d.otherAvatarEmoji, d.otherPhotoURL, d.otherProfileColor);
+        // Prefer the live users/{uid} profile over the copied otherName/etc
+        // fields, which only get refreshed when the other person happens to
+        // rename while this DM is in their own list — otherwise stale forever.
+        const live = liveProfiles[d.otherUid];
+        const name = live?.username || d.otherName;
+        const avatar = buildAvatarStyle(name, live?.avatarEmoji ?? d.otherAvatarEmoji, live?.photoURL ?? d.otherPhotoURL, live?.profileColor ?? d.otherProfileColor);
         return `
             <div class="dm-row${isActive ? ' is-active' : ''}" data-dm-id="${id}">
                 <div class="dm-avatar-wrap" data-uid="${d.otherUid}">
                     <div class="dm-avatar" style="${avatar.bg}">${avatar.html}</div>
                     <div class="dm-status-dot${isOnline ? ' is-online' : ''}"></div>
                 </div>
-                <span class="dm-name">${escHtml(d.otherName || 'Player')}</span>
+                <span class="dm-name">${escHtml(name || 'Player')}</span>
             </div>`;
     }).join('');
 
@@ -1627,7 +1684,8 @@ function renderDmList() {
         el.addEventListener('click', (e) => {
             e.stopPropagation();
             const d = myDms[el.closest('[data-dm-id]')?.dataset.dmId];
-            openViewProfile(el.dataset.uid, { name: d?.otherName, avatarEmoji: d?.otherAvatarEmoji, photoURL: d?.otherPhotoURL, profileColor: d?.otherProfileColor });
+            const live = liveProfiles[el.dataset.uid];
+            openViewProfile(el.dataset.uid, { name: live?.username || d?.otherName, avatarEmoji: live?.avatarEmoji ?? d?.otherAvatarEmoji, photoURL: live?.photoURL ?? d?.otherPhotoURL, profileColor: live?.profileColor ?? d?.otherProfileColor });
         });
     });
 }
@@ -1639,6 +1697,7 @@ async function openDm(dmId) {
     renderServerRail();
 
     const d = myDms[dmId];
+    syncLiveProfileSubscriptions(d?.otherUid ? [d.otherUid] : []);
     mainHeaderIcon.textContent = '@';
     mainHeaderTitle.textContent = d?.otherName || 'Direct Message';
     mainMembersToggleBtn.style.display = 'none';
@@ -2160,6 +2219,7 @@ function subscribeServerMeta(serverId) {
     activeMetaUnsub = onSnapshot(doc(db, 'servers', serverId), (snap) => {
         if (snap.exists()) {
             window.__currentServerMembers = snap.data().members || {};
+            syncLiveProfileSubscriptions(Object.keys(window.__currentServerMembers));
             renderMemberList();
             // A member's name/avatar/color may have just changed — repaint
             // any already-loaded messages in view so they reflect it too,
@@ -2183,14 +2243,20 @@ function renderMemberList() {
         const m = members[uid];
         const isMe = uid === currentUser.uid;
         const isOnline = !!onlineUids[uid];
-        const avatar = buildAvatarStyle(m?.name, m?.avatarEmoji, m?.photoURL, m?.profileColor);
+        // Prefer the live users/{uid} profile over the copied members.{uid}
+        // fields, which only get refreshed when that member happens to be
+        // signed in and renames while this server is in their own list —
+        // otherwise it can be stale indefinitely.
+        const live = isMe ? { username: currentProfile?.username, avatarEmoji: currentProfile?.avatarEmoji, photoURL: currentProfile?.photoURL, profileColor: currentProfile?.profileColor } : liveProfiles[uid];
+        const name = live?.username || m?.name;
+        const avatar = buildAvatarStyle(name, live?.avatarEmoji ?? m?.avatarEmoji, live?.photoURL ?? m?.photoURL, live?.profileColor ?? m?.profileColor);
         return `
             <div class="member-row${isOnline ? ' is-online' : ' is-offline'}" data-uid="${uid}">
                 <div class="member-avatar-wrap">
                     <div class="member-avatar" style="${avatar.bg}${isOnline ? '' : 'opacity:0.5;'}">${avatar.html}</div>
                     <div class="member-status${isOnline ? ' is-online' : ''}"></div>
                 </div>
-                <span class="member-name">${escHtml(m?.name || 'Player')}${isMe ? ' <span class="you-tag">(you)</span>' : ''}</span>
+                <span class="member-name">${escHtml(name || 'Player')}${isMe ? ' <span class="you-tag">(you)</span>' : ''}</span>
             </div>`;
     }
 
@@ -2208,8 +2274,10 @@ function renderMemberList() {
 
     memberList.querySelectorAll('[data-uid]').forEach(el => {
         el.addEventListener('click', () => {
-            const m = members[el.dataset.uid];
-            openViewProfile(el.dataset.uid, { name: m?.name, avatarEmoji: m?.avatarEmoji, photoURL: m?.photoURL, profileColor: m?.profileColor });
+            const uid = el.dataset.uid;
+            const m = members[uid];
+            const live = liveProfiles[uid];
+            openViewProfile(uid, { name: live?.username || m?.name, avatarEmoji: live?.avatarEmoji ?? m?.avatarEmoji, photoURL: live?.photoURL ?? m?.photoURL, profileColor: live?.profileColor ?? m?.profileColor });
         });
     });
 }
@@ -2338,6 +2406,21 @@ function getLiveSenderProfile(senderId, fallback) {
             profileColor: currentProfile?.profileColor ?? fallback.profileColor
         };
     }
+    // True source of truth: a direct live subscription to users/{uid}. This
+    // is always correct regardless of when the sender last renamed, unlike
+    // the members.{uid}/otherName copies below which can go stale for good.
+    ensureLiveProfileSubscribed(senderId);
+    const live = liveProfiles[senderId];
+    if (live) {
+        return {
+            name: live.username || fallback.name,
+            avatarEmoji: live.avatarEmoji ?? fallback.avatarEmoji,
+            photoURL: live.photoURL ?? fallback.photoURL,
+            profileColor: live.profileColor ?? fallback.profileColor
+        };
+    }
+    // Live doc hasn't loaded yet — use whatever copy we have as a stopgap
+    // until it arrives (at which point the subscription above repaints).
     if (activeContext?.type === 'server') {
         const m = (window.__currentServerMembers || {})[senderId];
         if (m) {
@@ -2381,15 +2464,10 @@ function appendMessage(m, msgRef) {
             ${msgRef ? `<button class="msg-action-btn is-delete" data-action="delete" title="Delete">🗑</button>` : ''}
         </div>`;
 
-    // Build reply-quote block if this message is a reply. The quoted
-    // sender's name is resolved live (same as the main message sender)
-    // so a rename shows up on old reply quotes too, not just new ones.
-    const replyLiveName = m.replyTo
-        ? getLiveSenderProfile(m.replyTo.senderId, { name: m.replyTo.senderName }).name
-        : null;
+    // Build reply-quote block if this message is a reply
     const replyHtml = m.replyTo
         ? `<div class="msg-reply-quote" data-reply-id="${escHtml(m.replyTo.msgId || '')}">
-               <span class="msg-reply-quote-name">${escHtml(replyLiveName)}</span>
+               <span class="msg-reply-quote-name">${escHtml(m.replyTo.senderName)}</span>
                <span class="msg-reply-quote-text">${escHtml(m.replyTo.text)}</span>
            </div>` : '';
 
@@ -2644,10 +2722,7 @@ function startTyping() {
     if (!tRef) return;
     if (!isCurrentlyTyping) {
         isCurrentlyTyping = true;
-        set(tRef, true).catch(err => {
-            console.warn('Typing indicator write failed (check Realtime Database rules):', err.code || err);
-            isCurrentlyTyping = false;
-        });
+        set(tRef, true);
         onDisconnect(tRef).remove();
     }
     clearTimeout(typingTimeout);
@@ -2677,13 +2752,17 @@ function subscribeTyping() {
         const names = [];
         Object.keys(typingMap).forEach(uid => {
             if (uid === currentUser.uid) return;
-            // Look up display name from server members or DM list
-            let name = null;
-            if (activeContext.type === 'server') {
-                name = (window.__currentServerMembers || {})[uid]?.name;
-            } else if (activeContext.type === 'dm') {
-                const d = myDms[activeContext.id];
-                if (d?.otherUid === uid) name = d.otherName;
+            // Look up display name from the live profile cache first, then
+            // fall back to the server members / DM list copy.
+            ensureLiveProfileSubscribed(uid);
+            let name = liveProfiles[uid]?.username;
+            if (!name) {
+                if (activeContext.type === 'server') {
+                    name = (window.__currentServerMembers || {})[uid]?.name;
+                } else if (activeContext.type === 'dm') {
+                    const d = myDms[activeContext.id];
+                    if (d?.otherUid === uid) name = d.otherName;
+                }
             }
             names.push(name || 'Someone');
         });
@@ -2697,8 +2776,6 @@ function subscribeTyping() {
         } else {
             typingIndicator.innerHTML = `<span class="typing-dots"><span></span><span></span><span></span></span> Several people are typing…`;
         }
-    }, (err) => {
-        console.warn('Typing indicator read failed (check Realtime Database rules):', err.code || err);
     });
 }
 
