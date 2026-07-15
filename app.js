@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import {
     getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, arrayUnion,
     collection, addDoc, query, orderBy, limit, getDocs, deleteField, serverTimestamp,
-    runTransaction
+    runTransaction, Timestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
     getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
@@ -1775,7 +1775,13 @@ document.getElementById("createRoomBtn").addEventListener("click", async () => {
         turnOrder: [localPlayerId], currentTurnIdx: 0, roundNumber: 0,
         players: { [localPlayerId]: { name, ready: false, cards: [], score: 0, cardSkin: currentProfile?.equippedSkin || 'classic', avatarEmoji: currentProfile?.avatarEmoji || null, photoURL: currentProfile?.photoURL || null } },
         deck: createDeck(), discard: [], dutchCalledBy: null, finalTurnsLeft: null,
-        turnPhase: 'AWAIT_DRAW', drawnCard: null, ability: null, pendingGive: null
+        turnPhase: 'AWAIT_DRAW', drawnCard: null, ability: null, pendingGive: null,
+        // TTL cleanup: Firestore auto-deletes this doc once expireAt is in
+        // the past, once a TTL policy on this field is enabled in the
+        // Firebase Console for the `rooms` collection. Rooms expire 24h
+        // after creation; pushState() and the presence heartbeat below
+        // push this out while a room is actively in use.
+        expireAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000)
     };
     await setDoc(doc(db, "rooms", roomCode), gameState);
     setupRoomSubscription(roomCode);
@@ -1833,15 +1839,36 @@ document.getElementById("joinRoomBtn").addEventListener("click", async () => {
 let presenceUnsub = null;
 let presenceWatchTimer = null;
 
+let roomExpiryHeartbeat = null; // interval id — see startRoomExpiryHeartbeat()
+
+// TTL cleanup: keeps a room's expireAt pushed forward while at least one
+// client has it open, even if nobody's taken a game action recently (e.g.
+// idling in the lobby). pushState() below refreshes expireAt on real
+// gameplay updates — this covers the idle gap. Failure here is non-fatal.
+function startRoomExpiryHeartbeat(code) {
+    stopRoomExpiryHeartbeat();
+    const touch = () => {
+        updateDoc(doc(db, 'rooms', code), {
+            expireAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000)
+        }).catch(() => {});
+    };
+    roomExpiryHeartbeat = setInterval(touch, 10 * 60 * 1000);
+}
+function stopRoomExpiryHeartbeat() {
+    if (roomExpiryHeartbeat) { clearInterval(roomExpiryHeartbeat); roomExpiryHeartbeat = null; }
+}
+
 function registerPresence(code, pid) {
     const presenceRef = ref(rtdb, `presence/${code}/${pid}`);
     set(presenceRef, { joinedAt: rtdbServerTimestamp() });
     onDisconnect(presenceRef).remove();
+    startRoomExpiryHeartbeat(code);
 }
 
 function clearPresence(code, pid) {
     if (!code || !pid) return;
     remove(ref(rtdb, `presence/${code}/${pid}`)).catch(() => {});
+    stopRoomExpiryHeartbeat();
 }
 
 // Watches who's actually still connected to this room and removes anyone
@@ -1931,7 +1958,13 @@ function setupRoomSubscription(code) {
 }
 
 async function pushState(partial) {
-    await updateDoc(doc(db, "rooms", roomCode), partial);
+    // Push the expiry out another 24h on every real state update, so a
+    // room that's still being actively played never gets caught by TTL
+    // cleanup — only truly abandoned rooms (no updates in 24h) expire.
+    await updateDoc(doc(db, "rooms", roomCode), {
+        ...partial,
+        expireAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000)
+    });
 }
 
 // ==========================================

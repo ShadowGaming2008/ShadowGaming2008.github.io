@@ -1201,7 +1201,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import {
             getFirestore, doc, setDoc, getDoc, getDocs, onSnapshot, updateDoc, arrayUnion, arrayRemove, deleteField,
-            collection, addDoc, query, orderBy, limit, serverTimestamp, runTransaction
+            collection, addDoc, query, orderBy, limit, serverTimestamp, runTransaction, Timestamp
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import {
             getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut,
@@ -1809,6 +1809,27 @@
         const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
         
         let currentRoomCode = null;
+        let roomExpiryHeartbeat = null; // interval id — see startRoomExpiryHeartbeat()
+
+        // TTL cleanup: keeps a room's expireAt pushed forward while at
+        // least one client has it open, so an actively-played game never
+        // gets caught by the 24h TTL policy — only truly abandoned rooms
+        // (nobody with the tab open in 24h) expire. Fires immediately,
+        // then every 10 minutes. Failure here is non-fatal — worst case
+        // is a stale room expires a little early, so errors are swallowed.
+        function startRoomExpiryHeartbeat(code) {
+            stopRoomExpiryHeartbeat();
+            const touch = () => {
+                updateDoc(doc(db, 'rooms', code), {
+                    expireAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000)
+                }).catch(() => {});
+            };
+            touch();
+            roomExpiryHeartbeat = setInterval(touch, 10 * 60 * 1000);
+        }
+        function stopRoomExpiryHeartbeat() {
+            if (roomExpiryHeartbeat) { clearInterval(roomExpiryHeartbeat); roomExpiryHeartbeat = null; }
+        }
         let roomSubscription = null;
         let localUser = null;
         let guestChoiceMade = false; // set true once the user clicks "Continue as Guest"; declared here (not near its usage below) so it's initialized before onAuthStateChanged's first callback can fire
@@ -2139,7 +2160,13 @@
                 pendingTrade: null, // { fromUid, toUid, offerCash, offerProps, offerGoojf, requestCash, requestProps, requestGoojf }
                 freeParkingPot: 0, // accumulated fines/taxes when Free Parking jackpot house rule is on
                 houseRules: { startingCash: 1500, freeParkingJackpot: false, auctionsEnabled: true, tradingEnabled: true },
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                // TTL cleanup: Firestore auto-deletes this doc once expireAt
+                // is in the past, once a TTL policy on this field is enabled
+                // in the Firebase Console for the `rooms` collection. Rooms
+                // expire 24h after creation unless refreshed by the expiry
+                // heartbeat while a room is actively being viewed.
+                expireAt: Timestamp.fromMillis(Date.now() + 24 * 60 * 60 * 1000)
             };
 
             await setDoc(doc(db, "rooms", code), initialGameState);
@@ -2180,6 +2207,7 @@
                 syncLobbyAndGameData(cachedGameState);
             });
             subscribeChat(code);
+            startRoomExpiryHeartbeat(code);
         }
 
         function syncLobbyAndGameData(state) {
@@ -3697,6 +3725,7 @@
         function exitToHub() {
             if (roomSubscription) roomSubscription();
             if (chatSubscription) chatSubscription();
+            stopRoomExpiryHeartbeat();
             if (currentRoomCode) leaveRoom(currentRoomCode);
             window.location.href = "index.html";
         }
@@ -3946,6 +3975,7 @@
         document.getElementById('btnLeaveLobby').addEventListener('click', () => {
             if (roomSubscription) { roomSubscription(); roomSubscription = null; }
             if (chatSubscription) { chatSubscription(); chatSubscription = null; }
+            stopRoomExpiryHeartbeat();
             if (currentRoomCode) leaveRoom(currentRoomCode);
             currentRoomCode = null;
             cachedGameState = null;
