@@ -34,6 +34,12 @@ const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 const rtdb = getDatabase(app);
 
+// Holds a Google credential that couldn't sign in directly because the
+// email is already tied to a password account (see handleSignIn below).
+// Once the person signs in with their password, this gets linked onto
+// that same uid so Google and email/password both resolve to one account.
+let pendingLinkCredential = null;
+
 // ==========================================
 // Toast System
 // ==========================================
@@ -533,7 +539,21 @@ async function handleSignIn() {
     try {
         await signInWithPopup(auth, googleProvider);
     } catch (err) {
-        if (err && err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        if (err && err.code === 'auth/account-exists-with-different-credential') {
+            // This email already has a password-based account under a
+            // DIFFERENT uid. Signing in via Google here would otherwise
+            // create/use a second, separate account with a blank profile —
+            // which is exactly the "reload resets my name/avatar" bug.
+            // Instead, hold the Google credential and have them sign in
+            // with their existing password so we can link the two.
+            pendingLinkCredential = GoogleAuthProvider.credentialFromError(err);
+            const email = err.customData?.email || '';
+            openEmailAuthModal();
+            emailAuthMode = 'signin';
+            updateEmailAuthModeUI();
+            document.getElementById("emailAuthEmailInput").value = email;
+            showEmailAuthError("This email already has a password on this account. Sign in below to link Google sign-in to it — afterward either method works.");
+        } else if (err && err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
             showToast("Sign-in failed — please try again.", 'error');
         }
     }
@@ -559,6 +579,7 @@ function openEmailAuthModal() {
 
 function closeEmailAuthModal() {
     document.getElementById("emailAuthModal").classList.add("hidden");
+    pendingLinkCredential = null;
 }
 
 function updateEmailAuthModeUI() {
@@ -639,7 +660,19 @@ document.getElementById("emailAuthSubmitBtn").addEventListener("click", async ()
         if (emailAuthMode === 'signup') {
             await createUserWithEmailAndPassword(auth, email, password);
         } else {
-            await signInWithEmailAndPassword(auth, email, password);
+            const cred = await signInWithEmailAndPassword(auth, email, password);
+            if (pendingLinkCredential) {
+                try {
+                    await linkWithCredential(cred.user, pendingLinkCredential);
+                    showToast("Google sign-in linked — either method works now.", 'success');
+                } catch (linkErr) {
+                    // auth/credential-already-in-use etc: the account is
+                    // still fully signed in either way, just not linked.
+                    console.warn('Google link after password sign-in failed:', linkErr.code || linkErr);
+                } finally {
+                    pendingLinkCredential = null;
+                }
+            }
         }
         closeEmailAuthModal();
     } catch (err) {

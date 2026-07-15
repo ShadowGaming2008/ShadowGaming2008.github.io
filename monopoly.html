@@ -1231,6 +1231,10 @@
         const db = getFirestore(app);
         const auth = getAuth(app);
         const googleProvider = new GoogleAuthProvider();
+        // Holds a Google credential that couldn't sign in directly because
+        // the email already has a password account under a different uid.
+        // Linked onto that account once they sign in with their password.
+        let pendingLinkCredential = null;
 
         // ── Toast system (mirrors app.js's visual style/config) ──
         function showToast(message, type = 'info', duration = 4500) {
@@ -1470,7 +1474,18 @@
                 closeEmailAuthModal();
             } catch (e) {
                 const code = (e.message || '').match(/auth\/[\w-]+/)?.[0];
-                if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
+                if (code === 'auth/account-exists-with-different-credential') {
+                    // Same email already has a password account under a
+                    // different uid — hold the Google credential and have
+                    // them sign in with their password to link it, instead
+                    // of silently landing on a second blank-profile account.
+                    pendingLinkCredential = GoogleAuthProvider.credentialFromError(e);
+                    openEmailAuthModal('signin');
+                    document.getElementById('emailAuthEmailInput').value = e.customData?.email || '';
+                    const errEl = document.getElementById('emailAuthError');
+                    errEl.textContent = "This email already has a password on this account. Sign in below to link Google sign-in to it — afterward either method works.";
+                    errEl.classList.remove('hidden');
+                } else if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
                     showToast('Google sign-in failed — please try again.', 'error');
                 }
             }
@@ -1487,7 +1502,7 @@
             document.getElementById('emailAuthModal').classList.remove('hidden');
             setTimeout(() => document.getElementById('emailAuthEmailInput').focus(), 50);
         }
-        function closeEmailAuthModal() { document.getElementById('emailAuthModal').classList.add('hidden'); }
+        function closeEmailAuthModal() { document.getElementById('emailAuthModal').classList.add('hidden'); pendingLinkCredential = null; }
         function updateEmailAuthModeUI() {
             const isSignIn = emailAuthMode === 'signin';
             document.getElementById('emailAuthTitle').textContent = isSignIn ? 'Sign In' : 'Sign Up';
@@ -1530,6 +1545,16 @@
                 let cred;
                 if (emailAuthMode === 'signin') {
                     cred = await signInWithEmailAndPassword(auth, email, pass);
+                    if (pendingLinkCredential) {
+                        try {
+                            await linkWithCredential(cred.user, pendingLinkCredential);
+                            showToast('Google sign-in linked — either method works now.', 'success');
+                        } catch (linkErr) {
+                            console.warn('Google link after password sign-in failed:', linkErr.code || linkErr);
+                        } finally {
+                            pendingLinkCredential = null;
+                        }
+                    }
                 } else {
                     cred = await createUserWithEmailAndPassword(auth, email, pass);
                 }

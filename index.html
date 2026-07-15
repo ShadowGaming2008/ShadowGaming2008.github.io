@@ -541,6 +541,10 @@
         let currentProfile = null;
         let profileUnsub   = null;
         let pendingAvatarChoice = undefined; // undefined = unchanged, null = cleared to Google photo, string = chosen emoji
+        // Holds a Google credential that couldn't sign in directly because
+        // the email already has a password account under a different uid.
+        // Linked onto that account once they sign in with their password.
+        let pendingLinkCredential = null;
 
         const AVATAR_PRESETS = ['🐱', '🐶', '🦊', '🐻', '🐼', '🦁', '🐸', '🐵', '🦉', '🐯', '🐧', '🦄', '🃏', '🎲', '👑', '🔥', '⭐', '🌙'];
 
@@ -574,7 +578,7 @@
             show(authModal);
             setTimeout(() => authEmail.focus(), 50);
         }
-        function closeAuthModal() { hide(authModal); }
+        function closeAuthModal() { hide(authModal); pendingLinkCredential = null; }
 
         authModal.addEventListener('click', e => { if (e.target === authModal) closeAuthModal(); });
         document.getElementById('cancelAuthBtn').addEventListener('click', closeAuthModal);
@@ -584,7 +588,16 @@
             const pass  = authPassword.value;
             if (!email || !pass) { showAuthError('Please enter your email and password.'); return; }
             try {
-                await signInWithEmailAndPassword(auth, email, pass);
+                const cred = await signInWithEmailAndPassword(auth, email, pass);
+                if (pendingLinkCredential) {
+                    try {
+                        await linkWithCredential(cred.user, pendingLinkCredential);
+                    } catch (linkErr) {
+                        console.warn('Google link after password sign-in failed:', linkErr.code || linkErr);
+                    } finally {
+                        pendingLinkCredential = null;
+                    }
+                }
                 closeAuthModal();
             } catch(e) { showAuthError(e.message); }
         });
@@ -605,7 +618,17 @@
                 closeAuthModal();
             } catch(e) {
                 const code = (e.message || '').match(/auth\/[\w-]+/)?.[0];
-                if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
+                if (code === 'auth/account-exists-with-different-credential') {
+                    // Same email already has a password account under a
+                    // different uid — hold the Google credential and have
+                    // them sign in with their password to link it, instead
+                    // of silently landing on a second blank-profile account.
+                    pendingLinkCredential = GoogleAuthProvider.credentialFromError(e);
+                    openAuthModal();
+                    authEmail.value = e.customData?.email || '';
+                    authError.textContent = "This email already has a password on this account. Sign in below to link Google sign-in to it — afterward either method works.";
+                    show(authError);
+                } else if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
                     showAuthError(e.message);
                 }
             }
