@@ -226,8 +226,20 @@
             z-index: 10;
         }
 
-        /* ── 3D pip dice ── */
+        /* ── 3D cube dice ── */
+        .dice-stage {
+            perspective: 400px;
+        }
         .die {
+            width: 56px; height: 56px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.25s ease;
+            transform: rotateX(-18deg) rotateY(25deg);
+        }
+        .die-face {
+            position: absolute;
+            top: 0; left: 0;
             width: 56px; height: 56px;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -237,39 +249,95 @@
             padding: 8px;
             border-radius: 14px;
             background: linear-gradient(160deg, #fbf8f1, #d9d2c0);
-            box-shadow: 0 8px 18px rgba(0,0,0,0.55), inset 0 -4px 5px rgba(0,0,0,0.15), inset 0 2px 3px rgba(255,255,255,0.6);
-            transform-style: preserve-3d;
-            transition: transform 0.18s ease;
+            box-shadow: inset 0 -4px 5px rgba(0,0,0,0.15), inset 0 2px 3px rgba(255,255,255,0.6);
+            backface-visibility: hidden;
         }
-        .die .pip {
+        .die-face .pip {
             width: 9px; height: 9px;
             border-radius: 50%;
             background: radial-gradient(circle at 32% 30%, #4b3a6e, #171022 75%);
             opacity: 0;
             box-shadow: inset 0 1px 1px rgba(0,0,0,0.5);
         }
-        .die[data-value="1"] .pip:nth-child(5) { opacity: 1; }
-        .die[data-value="2"] .pip:nth-child(1), .die[data-value="2"] .pip:nth-child(9) { opacity: 1; }
-        .die[data-value="3"] .pip:nth-child(1), .die[data-value="3"] .pip:nth-child(5), .die[data-value="3"] .pip:nth-child(9) { opacity: 1; }
-        .die[data-value="4"] .pip:nth-child(1), .die[data-value="4"] .pip:nth-child(3), .die[data-value="4"] .pip:nth-child(7), .die[data-value="4"] .pip:nth-child(9) { opacity: 1; }
-        .die[data-value="5"] .pip:nth-child(1), .die[data-value="5"] .pip:nth-child(3), .die[data-value="5"] .pip:nth-child(5), .die[data-value="5"] .pip:nth-child(7), .die[data-value="5"] .pip:nth-child(9) { opacity: 1; }
-        .die[data-value="6"] .pip:nth-child(1), .die[data-value="6"] .pip:nth-child(3), .die[data-value="6"] .pip:nth-child(4), .die[data-value="6"] .pip:nth-child(6), .die[data-value="6"] .pip:nth-child(7), .die[data-value="6"] .pip:nth-child(9) { opacity: 1; }
+        /* Face placement: cube net folded into a box, 28px = half of 56px */
+        .die-face[data-face="1"] { transform: rotateY(0deg) translateZ(28px); }
+        .die-face[data-face="2"] { transform: rotateY(90deg) translateZ(28px); }
+        .die-face[data-face="6"] { transform: rotateY(180deg) translateZ(28px); }
+        .die-face[data-face="5"] { transform: rotateY(-90deg) translateZ(28px); }
+        .die-face[data-face="3"] { transform: rotateX(90deg) translateZ(28px); }
+        .die-face[data-face="4"] { transform: rotateX(-90deg) translateZ(28px); }
+        .die-face[data-face="1"] .pip:nth-child(5) { opacity: 1; }
+        .die-face[data-face="2"] .pip:nth-child(1), .die-face[data-face="2"] .pip:nth-child(9) { opacity: 1; }
+        .die-face[data-face="3"] .pip:nth-child(1), .die-face[data-face="3"] .pip:nth-child(5), .die-face[data-face="3"] .pip:nth-child(9) { opacity: 1; }
+        .die-face[data-face="4"] .pip:nth-child(1), .die-face[data-face="4"] .pip:nth-child(3), .die-face[data-face="4"] .pip:nth-child(7), .die-face[data-face="4"] .pip:nth-child(9) { opacity: 1; }
+        .die-face[data-face="5"] .pip:nth-child(1), .die-face[data-face="5"] .pip:nth-child(3), .die-face[data-face="5"] .pip:nth-child(5), .die-face[data-face="5"] .pip:nth-child(7), .die-face[data-face="5"] .pip:nth-child(9) { opacity: 1; }
+        .die-face[data-face="6"] .pip:nth-child(1), .die-face[data-face="6"] .pip:nth-child(3), .die-face[data-face="6"] .pip:nth-child(4), .die-face[data-face="6"] .pip:nth-child(6), .die-face[data-face="6"] .pip:nth-child(7), .die-face[data-face="6"] .pip:nth-child(9) { opacity: 1; }
+        /* Rotation needed to bring each face to the front, used to "settle" on a value */
+        .die[data-value="1"] { transform: rotateX(0deg) rotateY(0deg); }
+        .die[data-value="2"] { transform: rotateX(0deg) rotateY(-90deg); }
+        .die[data-value="3"] { transform: rotateX(-90deg) rotateY(0deg); }
+        .die[data-value="4"] { transform: rotateX(90deg) rotateY(0deg); }
+        .die[data-value="5"] { transform: rotateX(0deg) rotateY(90deg); }
+        .die[data-value="6"] { transform: rotateX(0deg) rotateY(180deg); }
         .die.rolling {
-            animation: dice-tumble 0.9s cubic-bezier(0.4,0,0.2,1) infinite;
+            animation: dice-tumble 0.55s linear infinite;
         }
         @keyframes dice-tumble {
-            0%   { transform: rotate3d(1,1,0, 0deg) scale(1); }
-            25%  { transform: rotate3d(1,0.4,0.6, 140deg) scale(1.12); }
-            50%  { transform: rotate3d(0.2,1,0.5, 260deg) scale(0.94); }
-            75%  { transform: rotate3d(1,1,1, 340deg) scale(1.1); }
-            100% { transform: rotate3d(1,1,0, 360deg) scale(1); }
+            0%   { transform: rotateX(0deg)   rotateY(0deg)   translateY(0); }
+            20%  { transform: rotateX(190deg) rotateY(120deg) translateY(-14px) scale(1.08); }
+            40%  { transform: rotateX(340deg) rotateY(280deg) translateY(2px)  scale(0.96); }
+            60%  { transform: rotateX(480deg) rotateY(410deg) translateY(-10px) scale(1.05); }
+            80%  { transform: rotateX(610deg) rotateY(560deg) translateY(4px)  scale(0.98); }
+            100% { transform: rotateX(760deg) rotateY(720deg) translateY(0)    scale(1); }
         }
-        .die.dice-settle { animation: dice-settle 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+        .die.dice-settle { animation: dice-settle 0.55s cubic-bezier(0.34,1.56,0.64,1); }
         @keyframes dice-settle {
             0%   { transform: scale(1.35) rotate(10deg); }
             45%  { transform: scale(0.88) rotate(-6deg); }
             70%  { transform: scale(1.08) rotate(3deg); }
             100% { transform: scale(1) rotate(0deg); }
+        }
+        .die.dice-settle[data-value="1"] { animation-name: dice-settle-1; }
+        .die.dice-settle[data-value="2"] { animation-name: dice-settle-2; }
+        .die.dice-settle[data-value="3"] { animation-name: dice-settle-3; }
+        .die.dice-settle[data-value="4"] { animation-name: dice-settle-4; }
+        .die.dice-settle[data-value="5"] { animation-name: dice-settle-5; }
+        .die.dice-settle[data-value="6"] { animation-name: dice-settle-6; }
+        @keyframes dice-settle-1 {
+            0%   { transform: rotateX(0deg) rotateY(0deg) scale(1.35); }
+            45%  { transform: rotateX(0deg) rotateY(0deg) scale(0.88); }
+            70%  { transform: rotateX(0deg) rotateY(0deg) scale(1.08); }
+            100% { transform: rotateX(0deg) rotateY(0deg) scale(1); }
+        }
+        @keyframes dice-settle-2 {
+            0%   { transform: rotateX(0deg) rotateY(-90deg) scale(1.35); }
+            45%  { transform: rotateX(0deg) rotateY(-90deg) scale(0.88); }
+            70%  { transform: rotateX(0deg) rotateY(-90deg) scale(1.08); }
+            100% { transform: rotateX(0deg) rotateY(-90deg) scale(1); }
+        }
+        @keyframes dice-settle-3 {
+            0%   { transform: rotateX(-90deg) rotateY(0deg) scale(1.35); }
+            45%  { transform: rotateX(-90deg) rotateY(0deg) scale(0.88); }
+            70%  { transform: rotateX(-90deg) rotateY(0deg) scale(1.08); }
+            100% { transform: rotateX(-90deg) rotateY(0deg) scale(1); }
+        }
+        @keyframes dice-settle-4 {
+            0%   { transform: rotateX(90deg) rotateY(0deg) scale(1.35); }
+            45%  { transform: rotateX(90deg) rotateY(0deg) scale(0.88); }
+            70%  { transform: rotateX(90deg) rotateY(0deg) scale(1.08); }
+            100% { transform: rotateX(90deg) rotateY(0deg) scale(1); }
+        }
+        @keyframes dice-settle-5 {
+            0%   { transform: rotateX(0deg) rotateY(90deg) scale(1.35); }
+            45%  { transform: rotateX(0deg) rotateY(90deg) scale(0.88); }
+            70%  { transform: rotateX(0deg) rotateY(90deg) scale(1.08); }
+            100% { transform: rotateX(0deg) rotateY(90deg) scale(1); }
+        }
+        @keyframes dice-settle-6 {
+            0%   { transform: rotateX(0deg) rotateY(180deg) scale(1.35); }
+            45%  { transform: rotateX(0deg) rotateY(180deg) scale(0.88); }
+            70%  { transform: rotateX(0deg) rotateY(180deg) scale(1.08); }
+            100% { transform: rotateX(0deg) rotateY(180deg) scale(1); }
         }
 
         /* ── Token hop / landing flash ── */
@@ -1007,19 +1075,26 @@
         <section class="col-span-1 lg:col-span-7 flex justify-center">
             <div id="boardContainer" class="monopoly-board">
                 <div class="board-center p-6 text-center select-none">
+                    <button id="btnSfxMute" title="Toggle sound effects" class="absolute top-3 right-3 text-lg opacity-70 hover:opacity-100 transition" style="z-index:2;">🔊</button>
                     <h1 class="font-display font-black text-4xl tracking-tight text-[#f5f1e8] opacity-20" style="position:relative;z-index:1;">DICEUP</h1>
                     <p class="font-mono text-xs text-[#7c6af5] uppercase tracking-widest mt-2 opacity-40" style="position:relative;z-index:1;">World Cities Edition</p>
 
-                    <div class="mt-8 flex gap-4 items-center justify-center" style="position:relative;z-index:1;">
+                    <div class="mt-8 flex gap-4 items-center justify-center dice-stage" style="position:relative;z-index:1;">
                         <div id="dice1" class="die" data-value="1">
-                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+                            <div class="die-face" data-face="1"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+                            <div class="die-face" data-face="2"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+                            <div class="die-face" data-face="3"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+                            <div class="die-face" data-face="4"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+                            <div class="die-face" data-face="5"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+                            <div class="die-face" data-face="6"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
                         </div>
                         <div id="dice2" class="die" data-value="1">
-                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+                            <div class="die-face" data-face="1"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+                            <div class="die-face" data-face="2"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+                            <div class="die-face" data-face="3"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+                            <div class="die-face" data-face="4"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+                            <div class="die-face" data-face="5"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
+                            <div class="die-face" data-face="6"><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span><span class="pip"></span></div>
                         </div>
                     </div>
                 </div>
@@ -1322,6 +1397,8 @@
                 warning: { bg: 'bg-amber-900 border-amber-600',     text: 'text-amber-100',   icon: '⚠️' },
             };
             const c = configs[type] || configs.info;
+            if (type === 'success' && typeof SFX !== 'undefined') SFX.success();
+            else if (type === 'error' && typeof SFX !== 'undefined') SFX.error();
             toast.className = `toast-enter flex items-center gap-3 px-4 py-3 rounded-xl border-2 shadow-2xl text-sm leading-snug font-semibold pointer-events-auto ${c.bg} ${c.text}`;
             toast.innerHTML = `<span class="text-base flex-shrink-0">${c.icon}</span><span>${message}</span>`;
             container.appendChild(toast);
@@ -1907,6 +1984,135 @@
         const PLAYER_HUES = [140, 260, 20, 200, 320, 50];
         const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"]; // kept for reference; dice now render as CSS pips
 
+        // ═════════════════════════════════════════════════════════════
+        // SOUND EFFECTS — small synthesized WebAudio engine. No audio
+        // files needed (avoids CORS/asset-hosting issues); everything is
+        // generated on the fly with oscillators + noise buffers. A mute
+        // toggle is persisted in-memory (per session) and audio only
+        // starts after the first user gesture, per browser autoplay rules.
+        // ═════════════════════════════════════════════════════════════
+        let sfxCtx = null;
+        let sfxMuted = false;
+
+        function getSfxCtx() {
+            if (!sfxCtx) {
+                try {
+                    sfxCtx = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    return null;
+                }
+            }
+            if (sfxCtx.state === "suspended") sfxCtx.resume();
+            return sfxCtx;
+        }
+
+        function sfxTone(freq, { duration = 0.15, type = "sine", startGain = 0.18, delay = 0, glideTo = null } = {}) {
+            if (sfxMuted) return;
+            const ctx = getSfxCtx();
+            if (!ctx) return;
+            const t0 = ctx.currentTime + delay;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, t0);
+            if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t0 + duration);
+            gain.gain.setValueAtTime(startGain, t0);
+            gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t0);
+            osc.stop(t0 + duration + 0.02);
+        }
+
+        function sfxNoiseClick({ duration = 0.06, delay = 0, gainVal = 0.14, filterFreq = 2200 } = {}) {
+            if (sfxMuted) return;
+            const ctx = getSfxCtx();
+            if (!ctx) return;
+            const t0 = ctx.currentTime + delay;
+            const bufferSize = Math.floor(ctx.sampleRate * duration);
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+            const noise = ctx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = ctx.createBiquadFilter();
+            filter.type = "highpass";
+            filter.frequency.value = filterFreq;
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(gainVal, t0);
+            gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+            noise.start(t0);
+            noise.stop(t0 + duration + 0.02);
+        }
+
+        const SFX = {
+            diceRoll() {
+                // A quick rattle of clicks while the dice tumble.
+                for (let i = 0; i < 5; i++) {
+                    sfxNoiseClick({ delay: i * 0.09, duration: 0.05, gainVal: 0.1, filterFreq: 1800 + Math.random() * 800 });
+                }
+            },
+            diceLand() {
+                sfxNoiseClick({ duration: 0.08, gainVal: 0.2, filterFreq: 1200 });
+                sfxTone(180, { duration: 0.12, type: "triangle", startGain: 0.15, glideTo: 90 });
+            },
+            tokenHop() {
+                sfxTone(520, { duration: 0.09, type: "square", startGain: 0.08, glideTo: 640 });
+            },
+            passGo() {
+                sfxTone(523.25, { duration: 0.12, type: "sine", startGain: 0.16 });
+                sfxTone(659.25, { duration: 0.14, type: "sine", startGain: 0.16, delay: 0.09 });
+                sfxTone(783.99, { duration: 0.22, type: "sine", startGain: 0.18, delay: 0.18 });
+            },
+            cashIn() {
+                sfxTone(660, { duration: 0.1, type: "sine", startGain: 0.15 });
+                sfxTone(880, { duration: 0.16, type: "sine", startGain: 0.15, delay: 0.06 });
+            },
+            cashOut() {
+                sfxTone(300, { duration: 0.16, type: "sawtooth", startGain: 0.12, glideTo: 160 });
+            },
+            buy() {
+                sfxTone(392, { duration: 0.1, type: "triangle", startGain: 0.16 });
+                sfxTone(523.25, { duration: 0.16, type: "triangle", startGain: 0.16, delay: 0.08 });
+            },
+            card() {
+                sfxNoiseClick({ duration: 0.05, gainVal: 0.12, filterFreq: 3000 });
+                sfxTone(700, { duration: 0.09, type: "sine", startGain: 0.1, delay: 0.03 });
+            },
+            jail() {
+                sfxTone(220, { duration: 0.2, type: "square", startGain: 0.14 });
+                sfxTone(180, { duration: 0.28, type: "square", startGain: 0.12, delay: 0.14 });
+            },
+            error() {
+                sfxTone(220, { duration: 0.2, type: "sawtooth", startGain: 0.13, glideTo: 140 });
+            },
+            success() {
+                sfxTone(587.33, { duration: 0.1, type: "sine", startGain: 0.15 });
+                sfxTone(880, { duration: 0.18, type: "sine", startGain: 0.16, delay: 0.08 });
+            },
+            click() {
+                sfxNoiseClick({ duration: 0.03, gainVal: 0.08, filterFreq: 3500 });
+            },
+            bankrupt() {
+                sfxTone(196, { duration: 0.3, type: "sawtooth", startGain: 0.14, glideTo: 80 });
+            },
+            win() {
+                [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+                    sfxTone(f, { duration: 0.22, type: "sine", startGain: 0.17, delay: i * 0.12 });
+                });
+            }
+        };
+
+        function toggleSfxMute() {
+            sfxMuted = !sfxMuted;
+            const btn = document.getElementById("btnSfxMute");
+            if (btn) btn.textContent = sfxMuted ? "🔇" : "🔊";
+            return sfxMuted;
+        }
+
         let diceRollAnimTimer = null;
         let lastRenderedDice = null;
         let diceRollStartedAt = 0;
@@ -1931,6 +2137,7 @@
             d1.classList.add("rolling");
             d2.classList.add("rolling");
             diceRollStartedAt = Date.now();
+            SFX.diceRoll();
             clearInterval(diceRollAnimTimer);
             diceRollAnimTimer = setInterval(() => {
                 setDieFace(d1, Math.floor(Math.random() * 6) + 1, false);
@@ -1951,6 +2158,7 @@
                 d2.classList.remove("rolling");
                 setDieFace(d1, finalD1, true);
                 setDieFace(d2, finalD2, true);
+                SFX.diceLand();
             };
             if (remaining > 0) {
                 setTimeout(finish, remaining);
@@ -2463,6 +2671,7 @@
             statusAlert.textContent = `🏆 ${label} won the game — everyone else went bankrupt!`;
             if (announcedWinnerFor !== currentRoomCode) {
                 announcedWinnerFor = currentRoomCode;
+                if (isWinner) SFX.win(); else SFX.cashOut();
                 showToast(isWinner ? "You won! 🏆" : `${label} won the game.`, isWinner ? "success" : "info");
             }
             recordMonopolyResult(state);
@@ -2524,7 +2733,7 @@
             const startingGoojf = {};
             orders.forEach(uid => {
                 startingBalances[uid] = startingCash;
-                startingPositions[uid] = 10;
+                startingPositions[uid] = 0;
                 startingJail[uid] = false;
                 startingBankrupt[uid] = false;
                 startingGoojf[uid] = 0;
@@ -2599,6 +2808,7 @@
                 void el.offsetWidth;
                 el.classList.add("token-hop");
                 flashSpace(toPos);
+                SFX.tokenHop();
                 tokenLastPos[uid] = toPos;
                 return;
             }
@@ -2612,6 +2822,7 @@
                 el.classList.remove("token-hop");
                 void el.offsetWidth;
                 el.classList.add("token-hop");
+                SFX.tokenHop();
                 if (current === toPos) {
                     flashSpace(toPos);
                     tokenAnimLocks[uid] = false;
@@ -3010,8 +3221,9 @@
             const newStreak = isDoubles ? priorStreak + 1 : 0;
 
             if (isDoubles && newStreak >= 3) {
-                updatedPositions[localUser.uid] = 0;
+                updatedPositions[localUser.uid] = 10;
                 updatedJail[localUser.uid] = true;
+                SFX.jail();
                 showToast("Three doubles in a row — straight to Jail!", "error");
                 logEntries.push({ msg: `${myName} rolled three doubles in a row and was sent to Jail!`, tag: 'rent' });
 
@@ -3029,6 +3241,7 @@
 
             if (nextPos < currentPos) {
                 updatedBalances[localUser.uid] = (updatedBalances[localUser.uid] || 0) + 200;
+                SFX.passGo();
                 showToast("Passed GO! Collected $200", "success");
                 logEntries.push({ msg: `${myName} passed GO and collected $200.`, tag: 'buy' });
             }
@@ -3037,9 +3250,10 @@
             const targetSpace = BOARD_DATA[nextPos];
             let sentToJail = false;
             if (targetSpace.type === "gotojail") {
-                nextPos = 0; // Instantly snap to prison ward
+                nextPos = 10; // Instantly snap to prison ward
                 updatedJail[localUser.uid] = true;
                 sentToJail = true;
+                SFX.jail();
                 showToast("Sent directly to Jail!", "error");
                 logEntries.push({ msg: `${myName} was sent to Jail!`, tag: 'rent' });
             }
@@ -3053,6 +3267,7 @@
                 if (finalRent > 0) {
                     updatedBalances[localUser.uid] -= finalRent;
                     updatedBalances[spaceOwner] = (updatedBalances[spaceOwner] || 0) + finalRent;
+                    SFX.cashOut();
                     showToast(`Paid $${finalRent} rent to owner`, "error");
                     logEntries.push({ msg: `${myName} paid $${finalRent} rent on ${finalSpace.name}.`, tag: 'rent' });
                 } else if (cachedGameState.propertyMortgaged?.[nextPos]) {
@@ -3067,6 +3282,7 @@
             if (!sentToJail && ["chance", "chest"].includes(targetSpace.type)) {
                 const deck = targetSpace.type === "chance" ? CHANCE_CARDS : CHEST_CARDS;
                 const card = deck[Math.floor(Math.random() * deck.length)];
+                SFX.card();
                 showToast(`Card: ${card.text}`, "info", 5000);
                 logEntries.push({ msg: `${myName} drew: ${card.text}` });
 
@@ -3079,18 +3295,18 @@
                     }
                 } else if (card.action === "advance_go") {
                     // Only collect $200 if not already on GO
-                    if (nextPos !== 10) {
+                    if (nextPos !== 0) {
                         updatedBalances[localUser.uid] = (updatedBalances[localUser.uid] || 0) + 200;
                         logEntries.push({ msg: `${myName} advanced to GO and collected $200.`, tag: 'buy' });
                     }
-                    nextPos = 10;
-                    updatedPositions[localUser.uid] = 10;
+                    nextPos = 0;
+                    updatedPositions[localUser.uid] = 0;
                 } else if (card.action === "advance_to") {
                     const dest = card.target;
                     const isJailDest = card.is_jail;
                     if (isJailDest) {
-                        nextPos = 0;
-                        updatedPositions[localUser.uid] = 0;
+                        nextPos = 10;
+                        updatedPositions[localUser.uid] = 10;
                         updatedJail[localUser.uid] = true;
                         sentToJail = true;
                         logEntries.push({ msg: `${myName} was sent to Jail by a card!`, tag: 'rent' });
@@ -3252,6 +3468,7 @@
                     delete houses[spaceId];
                 }
             });
+            SFX.bankrupt();
             showToast("You've gone bankrupt and are out of the game!", "error");
             return true;
         }
@@ -3390,6 +3607,7 @@
             withLog(payload, [{ msg: `${shortNameFor(localUser.uid)} bought ${space.name} for $${cost}.`, tag: 'buy' }]);
             await updateDoc(doc(db, "rooms", currentRoomCode), payload);
 
+            SFX.buy();
             showToast(`Successfully purchased ${space.name}!`, "success");
             document.getElementById("buyActionWrapper").classList.add("hidden");
         }
@@ -4100,7 +4318,8 @@
             if (enteredCode.length === 5) joinActiveTable(enteredCode);
         });
         document.getElementById("btnStartGame").addEventListener("click", launchMatch);
-        document.getElementById("btnRollDice").addEventListener("click", handleDiceRollSequence);
+        document.getElementById("btnSfxMute").addEventListener("click", toggleSfxMute);
+        document.getElementById("btnRollDice").addEventListener("click", () => { SFX.click(); handleDiceRollSequence(); });
         document.getElementById("btnBuyProperty").addEventListener("click", buyCurrentAsset);
         document.getElementById("btnDeclineAuction").addEventListener("click", declinePurchaseAndAuction);
         document.getElementById("btnBuildHouse").addEventListener("click", buildPropertyImprovement);
@@ -4162,7 +4381,7 @@
         document.querySelectorAll(".auction-quick-bid").forEach(btn => {
             btn.addEventListener("click", () => submitAuctionQuickBid(parseInt(btn.dataset.increment, 10)));
         });
-        document.getElementById("btnEndTurn").addEventListener("click", stepNextTurn);
+        document.getElementById("btnEndTurn").addEventListener("click", () => { SFX.click(); stepNextTurn(); });
         document.getElementById("exitButton").addEventListener("click", exitToHub);
 
         // ── Party section wiring ──
