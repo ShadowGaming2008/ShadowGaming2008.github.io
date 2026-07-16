@@ -808,6 +808,19 @@
             <button id="leaderboardBtn" class="hub-btn hub-btn-brass" title="DiceUp leaderboard — separate from Dutch's">🏆 Leaderboard</button>
             <span id="tokenBalanceDisplay" class="hidden hub-btn hub-btn-ghost" style="cursor:default;pointer-events:none;" title="Tokens — spend 1 to host a table"></span>
             <button id="watchAdBtn" class="hidden hub-btn hub-btn-ghost" title="Watch a short ad to earn +1 token">🎬 +1</button>
+            <div style="position:relative;">
+                <button id="soundSettingsBtn" class="hub-btn hub-btn-ghost" title="Sound settings">🔊 Sound</button>
+                <div id="soundSettingsPopover" class="hidden" style="position:absolute; top:calc(100% + 8px); right:0; z-index:50; width:220px; background:var(--hub-panel, #1a2530); border:1px solid var(--hub-border, #263140); border-radius:12px; padding:14px; box-shadow:0 12px 30px rgba(0,0,0,0.45);">
+                    <div class="flex items-center justify-between" style="margin-bottom:10px;">
+                        <span class="text-xs font-bold uppercase tracking-wide" style="color:var(--hub-muted, #8b96a5);">Sound Effects</span>
+                        <button id="soundToggleSwitch" role="switch" aria-checked="true" title="Mute/unmute sound effects" style="width:38px; height:21px; border-radius:99px; border:1px solid var(--hub-border, #263140); background:#7c6af5; position:relative; transition:background 0.15s; flex-shrink:0;">
+                            <span id="soundToggleThumb" style="position:absolute; top:2px; left:19px; width:15px; height:15px; border-radius:50%; background:white; transition:left 0.15s;"></span>
+                        </button>
+                    </div>
+                    <label for="soundVolumeSlider" class="text-xs font-medium" style="color:var(--hub-text, #f5f1e8); display:block; margin-bottom:6px;">Volume</label>
+                    <input id="soundVolumeSlider" type="range" min="0" max="100" value="70" style="width:100%; accent-color:#7c6af5;" />
+                </div>
+            </div>
             <button id="headerSignInBtn" class="hub-btn hub-btn-slate">Sign in</button>
             <button id="headerAccountBtn" class="hidden hub-account-btn">
                 <div id="headerAvatar" class="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-xs flex-shrink-0" style="background:var(--hub-panel-raised);border:1px solid var(--hub-border);"></div>
@@ -1075,7 +1088,6 @@
         <section class="col-span-1 lg:col-span-7 flex justify-center">
             <div id="boardContainer" class="monopoly-board">
                 <div class="board-center p-6 text-center select-none">
-                    <button id="btnSfxMute" title="Toggle sound effects" class="absolute top-3 right-3 text-lg opacity-70 hover:opacity-100 transition" style="z-index:2;">🔊</button>
                     <h1 class="font-display font-black text-4xl tracking-tight text-[#f5f1e8] opacity-20" style="position:relative;z-index:1;">DICEUP</h1>
                     <p class="font-mono text-xs text-[#7c6af5] uppercase tracking-widest mt-2 opacity-40" style="position:relative;z-index:1;">World Cities Edition</p>
 
@@ -1993,6 +2005,7 @@
         // ═════════════════════════════════════════════════════════════
         let sfxCtx = null;
         let sfxMuted = false;
+        let sfxVolume = 0.7; // 0..1, applied as a multiplier to every gain value
 
         function getSfxCtx() {
             if (!sfxCtx) {
@@ -2007,7 +2020,7 @@
         }
 
         function sfxTone(freq, { duration = 0.15, type = "sine", startGain = 0.18, delay = 0, glideTo = null } = {}) {
-            if (sfxMuted) return;
+            if (sfxMuted || sfxVolume <= 0) return;
             const ctx = getSfxCtx();
             if (!ctx) return;
             const t0 = ctx.currentTime + delay;
@@ -2016,7 +2029,7 @@
             osc.type = type;
             osc.frequency.setValueAtTime(freq, t0);
             if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t0 + duration);
-            gain.gain.setValueAtTime(startGain, t0);
+            gain.gain.setValueAtTime(startGain * sfxVolume, t0);
             gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
             osc.connect(gain);
             gain.connect(ctx.destination);
@@ -2025,7 +2038,7 @@
         }
 
         function sfxNoiseClick({ duration = 0.06, delay = 0, gainVal = 0.14, filterFreq = 2200 } = {}) {
-            if (sfxMuted) return;
+            if (sfxMuted || sfxVolume <= 0) return;
             const ctx = getSfxCtx();
             if (!ctx) return;
             const t0 = ctx.currentTime + delay;
@@ -2039,7 +2052,7 @@
             filter.type = "highpass";
             filter.frequency.value = filterFreq;
             const gain = ctx.createGain();
-            gain.gain.setValueAtTime(gainVal, t0);
+            gain.gain.setValueAtTime(gainVal * sfxVolume, t0);
             gain.gain.exponentialRampToValueAtTime(0.001, t0 + duration);
             noise.connect(filter);
             filter.connect(gain);
@@ -2106,11 +2119,58 @@
             }
         };
 
+        function applySoundToggleUI() {
+            const sw = document.getElementById("soundToggleSwitch");
+            const thumb = document.getElementById("soundToggleThumb");
+            const headerBtn = document.getElementById("soundSettingsBtn");
+            if (sw) {
+                sw.setAttribute("aria-checked", String(!sfxMuted));
+                sw.style.background = sfxMuted ? "#3f4a58" : "#7c6af5";
+            }
+            if (thumb) thumb.style.left = sfxMuted ? "2px" : "19px";
+            if (headerBtn) headerBtn.textContent = (sfxMuted || sfxVolume <= 0) ? "🔇 Sound" : "🔊 Sound";
+        }
+
         function toggleSfxMute() {
             sfxMuted = !sfxMuted;
-            const btn = document.getElementById("btnSfxMute");
-            if (btn) btn.textContent = sfxMuted ? "🔇" : "🔊";
+            applySoundToggleUI();
             return sfxMuted;
+        }
+
+        function setSfxVolume(pct) {
+            sfxVolume = Math.max(0, Math.min(100, pct)) / 100;
+            applySoundToggleUI();
+        }
+
+        function initSoundSettingsUI() {
+            const settingsBtn = document.getElementById("soundSettingsBtn");
+            const popover = document.getElementById("soundSettingsPopover");
+            const toggleSwitch = document.getElementById("soundToggleSwitch");
+            const slider = document.getElementById("soundVolumeSlider");
+            if (!settingsBtn || !popover) return;
+
+            slider.value = Math.round(sfxVolume * 100);
+            applySoundToggleUI();
+
+            settingsBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                popover.classList.toggle("hidden");
+            });
+            document.addEventListener("click", (e) => {
+                if (!popover.classList.contains("hidden") && !popover.contains(e.target) && e.target !== settingsBtn) {
+                    popover.classList.add("hidden");
+                }
+            });
+            toggleSwitch.addEventListener("click", () => {
+                toggleSfxMute();
+                if (!sfxMuted) SFX.click();
+            });
+            slider.addEventListener("input", (e) => {
+                setSfxVolume(Number(e.target.value));
+            });
+            slider.addEventListener("change", () => {
+                if (!sfxMuted) SFX.click();
+            });
         }
 
         let diceRollAnimTimer = null;
@@ -4318,7 +4378,7 @@
             if (enteredCode.length === 5) joinActiveTable(enteredCode);
         });
         document.getElementById("btnStartGame").addEventListener("click", launchMatch);
-        document.getElementById("btnSfxMute").addEventListener("click", toggleSfxMute);
+        initSoundSettingsUI();
         document.getElementById("btnRollDice").addEventListener("click", () => { SFX.click(); handleDiceRollSequence(); });
         document.getElementById("btnBuyProperty").addEventListener("click", buyCurrentAsset);
         document.getElementById("btnDeclineAuction").addEventListener("click", declinePurchaseAndAuction);
