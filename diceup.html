@@ -226,69 +226,6 @@
             z-index: 10;
         }
 
-        /* ── 3D pip dice ── */
-        .die {
-            width: 56px; height: 56px;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            align-items: center;
-            justify-items: center;
-            padding: 8px;
-            border-radius: 14px;
-            background: linear-gradient(160deg, #fbf8f1, #d9d2c0);
-            box-shadow: 0 8px 18px rgba(0,0,0,0.55), inset 0 -4px 5px rgba(0,0,0,0.15), inset 0 2px 3px rgba(255,255,255,0.6);
-            transform-style: preserve-3d;
-            transition: transform 0.18s ease;
-        }
-        .die .pip {
-            width: 9px; height: 9px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 32% 30%, #4b3a6e, #171022 75%);
-            opacity: 0;
-            box-shadow: inset 0 1px 1px rgba(0,0,0,0.5);
-        }
-        .die[data-value="1"] .pip:nth-child(5) { opacity: 1; }
-        .die[data-value="2"] .pip:nth-child(1), .die[data-value="2"] .pip:nth-child(9) { opacity: 1; }
-        .die[data-value="3"] .pip:nth-child(1), .die[data-value="3"] .pip:nth-child(5), .die[data-value="3"] .pip:nth-child(9) { opacity: 1; }
-        .die[data-value="4"] .pip:nth-child(1), .die[data-value="4"] .pip:nth-child(3), .die[data-value="4"] .pip:nth-child(7), .die[data-value="4"] .pip:nth-child(9) { opacity: 1; }
-        .die[data-value="5"] .pip:nth-child(1), .die[data-value="5"] .pip:nth-child(3), .die[data-value="5"] .pip:nth-child(5), .die[data-value="5"] .pip:nth-child(7), .die[data-value="5"] .pip:nth-child(9) { opacity: 1; }
-        .die[data-value="6"] .pip:nth-child(1), .die[data-value="6"] .pip:nth-child(3), .die[data-value="6"] .pip:nth-child(4), .die[data-value="6"] .pip:nth-child(6), .die[data-value="6"] .pip:nth-child(7), .die[data-value="6"] .pip:nth-child(9) { opacity: 1; }
-        .die.rolling {
-            animation: dice-tumble 0.55s cubic-bezier(0.4,0,0.2,1) infinite;
-        }
-        @keyframes dice-tumble {
-            0%   { transform: rotate3d(1,1,0, 0deg) scale(1); }
-            25%  { transform: rotate3d(1,0.4,0.6, 140deg) scale(1.08); }
-            50%  { transform: rotate3d(0.2,1,0.5, 260deg) scale(0.96); }
-            75%  { transform: rotate3d(1,1,1, 340deg) scale(1.05); }
-            100% { transform: rotate3d(1,1,0, 360deg) scale(1); }
-        }
-        .die.dice-settle { animation: dice-settle 0.35s ease; }
-        @keyframes dice-settle {
-            0%   { transform: scale(1.25) rotate(8deg); }
-            60%  { transform: scale(0.92) rotate(-4deg); }
-            100% { transform: scale(1) rotate(0deg); }
-        }
-
-        /* ── Token hop / landing flash ── */
-        .avatar-token {
-            transition: transform 0.12s ease;
-        }
-        .token-hop { animation: token-hop 0.18s ease; }
-        @keyframes token-hop {
-            0%   { transform: translateY(0) scale(1); }
-            40%  { transform: translateY(-9px) scale(1.12); }
-            100% { transform: translateY(0) scale(1); }
-        }
-        .board-space.space-flash {
-            animation: space-flash 0.7s ease;
-        }
-        @keyframes space-flash {
-            0%   { box-shadow: inset 0 0 0 2px rgba(124,106,245,0.9), 0 0 18px rgba(124,106,245,0.8); background: rgba(124,106,245,0.25); }
-            100% { box-shadow: none; }
-        }
-
         .avatar-token {
             width: 17px;
             height: 17px;
@@ -1008,16 +945,8 @@
                     <p class="font-mono text-xs text-[#7c6af5] uppercase tracking-widest mt-2 opacity-40" style="position:relative;z-index:1;">World Cities Edition</p>
 
                     <div class="mt-8 flex gap-4 items-center justify-center" style="position:relative;z-index:1;">
-                        <div id="dice1" class="die" data-value="1">
-                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-                        </div>
-                        <div id="dice2" class="die" data-value="1">
-                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-                        </div>
+                        <div id="dice1" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl font-bold font-mono" style="background:linear-gradient(160deg,#f5f1e8,#d9d2c0);color:#171022;box-shadow:0 6px 16px rgba(0,0,0,0.5), inset 0 -3px 4px rgba(0,0,0,0.15);">⚀</div>
+                        <div id="dice2" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl font-bold font-mono" style="background:linear-gradient(160deg,#f5f1e8,#d9d2c0);color:#171022;box-shadow:0 6px 16px rgba(0,0,0,0.5), inset 0 -3px 4px rgba(0,0,0,0.15);">⚀</div>
                     </div>
                 </div>
             </div>
@@ -1902,47 +1831,7 @@
         ];
 
         const PLAYER_HUES = [140, 260, 20, 200, 320, 50];
-        const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"]; // kept for reference; dice now render as CSS pips
-
-        let diceRollAnimTimer = null;
-        let lastRenderedDice = null;
-
-        function setDieFace(el, value, settle) {
-            if (!el) return;
-            el.dataset.value = Math.max(1, Math.min(6, value || 1));
-            if (settle) {
-                el.classList.remove("dice-settle");
-                void el.offsetWidth;
-                el.classList.add("dice-settle");
-            }
-        }
-
-        // Spins both dice through random faces while a roll is in flight,
-        // then settles on the real result once Firestore confirms it.
-        function startDiceRollAnimation() {
-            const d1 = document.getElementById("dice1");
-            const d2 = document.getElementById("dice2");
-            if (!d1 || !d2) return;
-            d1.classList.add("rolling");
-            d2.classList.add("rolling");
-            clearInterval(diceRollAnimTimer);
-            diceRollAnimTimer = setInterval(() => {
-                setDieFace(d1, Math.floor(Math.random() * 6) + 1, false);
-                setDieFace(d2, Math.floor(Math.random() * 6) + 1, false);
-            }, 90);
-        }
-
-        function stopDiceRollAnimation(finalD1, finalD2) {
-            clearInterval(diceRollAnimTimer);
-            diceRollAnimTimer = null;
-            const d1 = document.getElementById("dice1");
-            const d2 = document.getElementById("dice2");
-            if (!d1 || !d2) return;
-            d1.classList.remove("rolling");
-            d2.classList.remove("rolling");
-            setDieFace(d1, finalD1, true);
-            setDieFace(d2, finalD2, true);
-        }
+        const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
         
         let currentRoomCode = null;
         let roomExpiryHeartbeat = null; // interval id — see startRoomExpiryHeartbeat()
@@ -2396,11 +2285,8 @@
                 document.getElementById("chat-launcher").style.display = "flex";
                 
                 if (state.dice) {
-                    const diceKey = state.dice.join(",") + "|" + (state.activityLog?.length || 0);
-                    if (diceKey !== lastRenderedDice) {
-                        lastRenderedDice = diceKey;
-                        stopDiceRollAnimation(state.dice[0] || 1, state.dice[1] || 1);
-                    }
+                    document.getElementById("dice1").textContent = DICE_FACES[(state.dice[0] - 1) || 0];
+                    document.getElementById("dice2").textContent = DICE_FACES[(state.dice[1] - 1) || 0];
                 }
 
                 // Free Parking pot display
@@ -2536,95 +2422,19 @@
             });
         }
 
-        const tokenLastPos = {};
-        const tokenAnimLocks = {};
-
-        function ensureTokenEl(uid, index) {
-            let el = document.getElementById(`token-${uid}`);
-            if (!el) {
-                el = document.createElement("div");
-                el.id = `token-${uid}`;
-                el.className = "avatar-token";
-                el.style.backgroundColor = `hsl(${PLAYER_HUES[index % PLAYER_HUES.length]}, 70%, 50%)`;
-                el.textContent = uid === localUser.uid ? "⭐" : (index + 1);
-            }
-            return el;
-        }
-
-        function placeTokenAt(el, pos) {
-            const holder = document.getElementById(`tokens-space-${pos}`);
-            if (holder && el.parentElement !== holder) holder.appendChild(el);
-        }
-
-        function flashSpace(pos) {
-            const spaceEl = document.querySelector(`.board-space.space-${pos}`);
-            if (!spaceEl) return;
-            spaceEl.classList.remove("space-flash");
-            void spaceEl.offsetWidth;
-            spaceEl.classList.add("space-flash");
-        }
-
-        // Hops a token forward one tile at a time from its old position to
-        // its new one, rather than snapping straight there. Long jumps
-        // (card teleports, Go To Jail) are capped so the animation stays
-        // snappy instead of circling the whole board.
-        function hopToken(uid, el, fromPos, toPos) {
-            if (tokenAnimLocks[uid]) {
-                placeTokenAt(el, toPos);
-                tokenLastPos[uid] = toPos;
-                return;
-            }
-            let steps = (toPos - fromPos + 40) % 40;
-            if (steps === 0) { placeTokenAt(el, toPos); tokenLastPos[uid] = toPos; return; }
-
-            const maxAnimatedSteps = 12;
-            if (steps > maxAnimatedSteps) {
-                placeTokenAt(el, toPos);
-                el.classList.remove("token-hop");
-                void el.offsetWidth;
-                el.classList.add("token-hop");
-                flashSpace(toPos);
-                tokenLastPos[uid] = toPos;
-                return;
-            }
-
-            tokenAnimLocks[uid] = true;
-            let current = fromPos;
-            const stepDelay = 110;
-            const step = () => {
-                current = (current + 1) % 40;
-                placeTokenAt(el, current);
-                el.classList.remove("token-hop");
-                void el.offsetWidth;
-                el.classList.add("token-hop");
-                if (current === toPos) {
-                    flashSpace(toPos);
-                    tokenAnimLocks[uid] = false;
-                    tokenLastPos[uid] = toPos;
-                    return;
-                }
-                setTimeout(step, stepDelay);
-            };
-            step();
-        }
-
         function updateBoardTokens(state) {
+            document.querySelectorAll(".token-holder").forEach(h => h.innerHTML = "");
             const orders = state.playersOrder || [];
             orders.forEach((uid, index) => {
-                const newPos = state.playerPositions?.[uid] ?? 0;
-                const el = ensureTokenEl(uid, index);
-                const prevPos = tokenLastPos[uid];
-                if (prevPos === undefined || prevPos === newPos) {
-                    placeTokenAt(el, newPos);
-                    tokenLastPos[uid] = newPos;
-                } else {
-                    hopToken(uid, el, prevPos, newPos);
+                const pos = state.playerPositions?.[uid] ?? 0;
+                const holder = document.getElementById(`tokens-space-${pos}`);
+                if (holder) {
+                    const token = document.createElement("div");
+                    token.className = "avatar-token";
+                    token.style.backgroundColor = `hsl(${PLAYER_HUES[index % PLAYER_HUES.length]}, 70%, 50%)`;
+                    token.textContent = uid === localUser.uid ? "⭐" : (index + 1);
+                    holder.appendChild(token);
                 }
-            });
-            // Drop tokens for players no longer in the room (removed/kicked).
-            document.querySelectorAll(".avatar-token[id^='token-']").forEach(el => {
-                const uid = el.id.replace("token-", "");
-                if (!orders.includes(uid)) el.remove();
             });
         }
 
@@ -2969,7 +2779,6 @@
 
         async function handleDiceRollSequence() {
             if (!currentRoomCode || !cachedGameState) return;
-            startDiceRollAnimation();
 
             const d1 = Math.floor(Math.random() * 6) + 1;
             const d2 = Math.floor(Math.random() * 6) + 1;
@@ -3297,7 +3106,6 @@
 
         async function rollJailEscapeAttempt() {
             if (!currentRoomCode || !cachedGameState) return;
-            startDiceRollAnimation();
             const d1 = Math.floor(Math.random() * 6) + 1;
             const d2 = Math.floor(Math.random() * 6) + 1;
 
