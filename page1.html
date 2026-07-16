@@ -81,7 +81,7 @@
         }
 
         /* Grid specific positional item placements (0 to 39) */
-        .space-0  { grid-column: 1; grid-row: 1; } /* Jail */
+        .space-0  { grid-column: 1; grid-row: 1; } /* GO */
         .space-1  { grid-column: 2; grid-row: 1; }
         .space-2  { grid-column: 3; grid-row: 1; }
         .space-3  { grid-column: 4; grid-row: 1; }
@@ -91,7 +91,7 @@
         .space-7  { grid-column: 8; grid-row: 1; }
         .space-8  { grid-column: 9; grid-row: 1; }
         .space-9  { grid-column: 10; grid-row: 1; }
-        .space-10 { grid-column: 11; grid-row: 1; } /* GO */
+        .space-10 { grid-column: 11; grid-row: 1; } /* Jail */
         .space-11 { grid-column: 11; grid-row: 2; }
         .space-12 { grid-column: 11; grid-row: 3; }
         .space-13 { grid-column: 11; grid-row: 4; }
@@ -101,7 +101,7 @@
         .space-17 { grid-column: 11; grid-row: 8; }
         .space-18 { grid-column: 11; grid-row: 9; }
         .space-19 { grid-column: 11; grid-row: 10; }
-        .space-20 { grid-column: 11; grid-row: 11; } /* Go To Jail */
+        .space-20 { grid-column: 11; grid-row: 11; } /* Vacation */
         .space-21 { grid-column: 10; grid-row: 11; }
         .space-22 { grid-column: 9; grid-row: 11; }
         .space-23 { grid-column: 8; grid-row: 11; }
@@ -111,7 +111,7 @@
         .space-27 { grid-column: 4; grid-row: 11; }
         .space-28 { grid-column: 3; grid-row: 11; }
         .space-29 { grid-column: 2; grid-row: 11; }
-        .space-30 { grid-column: 1; grid-row: 11; } /* Vacation */
+        .space-30 { grid-column: 1; grid-row: 11; } /* Go To Jail */
         .space-31 { grid-column: 1; grid-row: 10; }
         .space-32 { grid-column: 1; grid-row: 9; }
         .space-33 { grid-column: 1; grid-row: 8; }
@@ -211,8 +211,8 @@
             line-height: 1;
             filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
         }
-        .space-10 .corner-icon { color: #ef4444; transform: rotate(-135deg) scaleX(-1); }
-        .space-20 .corner-icon { color: #ef4444; }
+        .space-0 .corner-icon { color: #ef4444; transform: rotate(-135deg) scaleX(-1); }
+        .space-30 .corner-icon { color: #ef4444; }
 
         .token-holder {
             display: flex;
@@ -224,6 +224,72 @@
             left: 0;
             right: 0;
             z-index: 10;
+        }
+
+        /* ── 3D pip dice ── */
+        .die {
+            width: 56px; height: 56px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            align-items: center;
+            justify-items: center;
+            padding: 8px;
+            border-radius: 14px;
+            background: linear-gradient(160deg, #fbf8f1, #d9d2c0);
+            box-shadow: 0 8px 18px rgba(0,0,0,0.55), inset 0 -4px 5px rgba(0,0,0,0.15), inset 0 2px 3px rgba(255,255,255,0.6);
+            transform-style: preserve-3d;
+            transition: transform 0.18s ease;
+        }
+        .die .pip {
+            width: 9px; height: 9px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 32% 30%, #4b3a6e, #171022 75%);
+            opacity: 0;
+            box-shadow: inset 0 1px 1px rgba(0,0,0,0.5);
+        }
+        .die[data-value="1"] .pip:nth-child(5) { opacity: 1; }
+        .die[data-value="2"] .pip:nth-child(1), .die[data-value="2"] .pip:nth-child(9) { opacity: 1; }
+        .die[data-value="3"] .pip:nth-child(1), .die[data-value="3"] .pip:nth-child(5), .die[data-value="3"] .pip:nth-child(9) { opacity: 1; }
+        .die[data-value="4"] .pip:nth-child(1), .die[data-value="4"] .pip:nth-child(3), .die[data-value="4"] .pip:nth-child(7), .die[data-value="4"] .pip:nth-child(9) { opacity: 1; }
+        .die[data-value="5"] .pip:nth-child(1), .die[data-value="5"] .pip:nth-child(3), .die[data-value="5"] .pip:nth-child(5), .die[data-value="5"] .pip:nth-child(7), .die[data-value="5"] .pip:nth-child(9) { opacity: 1; }
+        .die[data-value="6"] .pip:nth-child(1), .die[data-value="6"] .pip:nth-child(3), .die[data-value="6"] .pip:nth-child(4), .die[data-value="6"] .pip:nth-child(6), .die[data-value="6"] .pip:nth-child(7), .die[data-value="6"] .pip:nth-child(9) { opacity: 1; }
+        .die.rolling {
+            animation: dice-tumble 0.9s cubic-bezier(0.4,0,0.2,1) infinite;
+        }
+        @keyframes dice-tumble {
+            0%   { transform: rotate3d(1,1,0, 0deg) scale(1); }
+            25%  { transform: rotate3d(1,0.4,0.6, 140deg) scale(1.12); }
+            50%  { transform: rotate3d(0.2,1,0.5, 260deg) scale(0.94); }
+            75%  { transform: rotate3d(1,1,1, 340deg) scale(1.1); }
+            100% { transform: rotate3d(1,1,0, 360deg) scale(1); }
+        }
+        .die.dice-settle { animation: dice-settle 0.6s cubic-bezier(0.34,1.56,0.64,1); }
+        @keyframes dice-settle {
+            0%   { transform: scale(1.35) rotate(10deg); }
+            45%  { transform: scale(0.88) rotate(-6deg); }
+            70%  { transform: scale(1.08) rotate(3deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        /* ── Token hop / landing flash ── */
+        .avatar-token {
+            transition: transform 0.18s ease;
+        }
+        .token-hop { animation: token-hop 0.32s cubic-bezier(0.34,1.56,0.64,1); }
+        @keyframes token-hop {
+            0%   { transform: translateY(0) scale(1); }
+            35%  { transform: translateY(-16px) scale(1.22) rotate(-6deg); }
+            65%  { transform: translateY(-16px) scale(1.22) rotate(6deg); }
+            100% { transform: translateY(0) scale(1) rotate(0deg); }
+        }
+        .board-space.space-flash {
+            animation: space-flash 1.1s ease;
+        }
+        @keyframes space-flash {
+            0%   { box-shadow: inset 0 0 0 2px rgba(124,106,245,0.9), 0 0 22px rgba(124,106,245,0.9); background: rgba(124,106,245,0.3); }
+            60%  { box-shadow: inset 0 0 0 2px rgba(124,106,245,0.6), 0 0 14px rgba(124,106,245,0.5); background: rgba(124,106,245,0.15); }
+            100% { box-shadow: none; background: transparent; }
         }
 
         .avatar-token {
@@ -945,8 +1011,16 @@
                     <p class="font-mono text-xs text-[#7c6af5] uppercase tracking-widest mt-2 opacity-40" style="position:relative;z-index:1;">World Cities Edition</p>
 
                     <div class="mt-8 flex gap-4 items-center justify-center" style="position:relative;z-index:1;">
-                        <div id="dice1" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl font-bold font-mono" style="background:linear-gradient(160deg,#f5f1e8,#d9d2c0);color:#171022;box-shadow:0 6px 16px rgba(0,0,0,0.5), inset 0 -3px 4px rgba(0,0,0,0.15);">⚀</div>
-                        <div id="dice2" class="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl font-bold font-mono" style="background:linear-gradient(160deg,#f5f1e8,#d9d2c0);color:#171022;box-shadow:0 6px 16px rgba(0,0,0,0.5), inset 0 -3px 4px rgba(0,0,0,0.15);">⚀</div>
+                        <div id="dice1" class="die" data-value="1">
+                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+                        </div>
+                        <div id="dice2" class="die" data-value="1">
+                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+                            <span class="pip"></span><span class="pip"></span><span class="pip"></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1748,7 +1822,7 @@
         }
 
         const BOARD_DATA = [
-            { id: 10,  name: "START", type: "go", color: null, cost: null, rent: [0], group: "special" },
+            { id: 0,  name: "START", type: "go", color: null, cost: null, rent: [0], group: "special" },
             { id: 1,  name: "Salvador", type: "property", color: "#92400e", cost: 60, rent: [2, 10, 30, 90, 160, 250], houseCost: 50, group: "brown" },
             { id: 2,  name: "Community Chest", type: "chest", color: null, cost: null, rent: [0], group: "special" },
             { id: 3,  name: "Rio", type: "property", color: "#92400e", cost: 60, rent: [4, 20, 60, 180, 320, 450], houseCost: 50, group: "brown" },
@@ -1758,7 +1832,7 @@
             { id: 7,  name: "Chance", type: "chance", color: null, cost: null, rent: [0], group: "special" },
             { id: 8,  name: "Haifa", type: "property", color: "#0284c7", cost: 100, rent: [6, 30, 90, 270, 400, 550], houseCost: 50, group: "lightblue" },
             { id: 9,  name: "Jerusalem", type: "property", color: "#0284c7", cost: 120, rent: [8, 40, 100, 300, 450, 600], houseCost: 50, group: "lightblue" },
-            { id: 0, name: "JAIL", type: "jail", color: null, cost: null, rent: [0], group: "special" },
+            { id: 10, name: "JAIL", type: "jail", color: null, cost: null, rent: [0], group: "special" },
             { id: 11, name: "Venice", type: "property", color: "#db2777", cost: 140, rent: [10, 50, 150, 450, 625, 750], houseCost: 100, group: "pink" },
             { id: 12, name: "Electric Company", type: "utility", color: "#78716c", cost: 150, rent: [4, 10], group: "utility" },
             { id: 13, name: "Milan", type: "property", color: "#db2777", cost: 140, rent: [10, 50, 150, 450, 625, 750], houseCost: 100, group: "pink" },
@@ -1768,7 +1842,7 @@
             { id: 17, name: "Community Chest", type: "chest", color: null, cost: null, rent: [0], group: "special" },
             { id: 18, name: "Munich", type: "property", color: "#ea580c", cost: 180, rent: [14, 70, 200, 550, 750, 950], houseCost: 100, group: "orange" },
             { id: 19, name: "Berlin", type: "property", color: "#ea580c", cost: 200, rent: [16, 80, 220, 600, 800, 1000], houseCost: 100, group: "orange" },
-            { id: 30, name: "VACATION", type: "parking", color: null, cost: null, rent: [0], group: "special" },
+            { id: 20, name: "VACATION", type: "parking", color: null, cost: null, rent: [0], group: "special" },
             { id: 21, name: "Shenzhen", type: "property", color: "#e11d48", cost: 220, rent: [18, 90, 250, 700, 875, 1050], houseCost: 150, group: "red" },
             { id: 22, name: "Chance", type: "chance", color: null, cost: null, rent: [0], group: "special" },
             { id: 23, name: "Beijing", type: "property", color: "#e11d48", cost: 220, rent: [18, 90, 250, 700, 875, 1050], houseCost: 150, group: "red" },
@@ -1778,7 +1852,7 @@
             { id: 27, name: "Toulouse", type: "property", color: "#eab308", cost: 260, rent: [22, 110, 330, 800, 975, 1150], houseCost: 150, group: "yellow" },
             { id: 28, name: "Water Company", type: "utility", color: "#78716c", cost: 150, rent: [4, 10], group: "utility" },
             { id: 29, name: "Paris", type: "property", color: "#eab308", cost: 280, rent: [24, 120, 360, 850, 1025, 1200], houseCost: 150, group: "yellow" },
-            { id: 20, name: "GO TO JAIL", type: "gotojail", color: null, cost: null, rent: [0], group: "special" },
+            { id: 30, name: "GO TO JAIL", type: "gotojail", color: null, cost: null, rent: [0], group: "special" },
             { id: 31, name: "Liverpool", type: "property", color: "#16a34a", cost: 300, rent: [26, 130, 390, 900, 1100, 1275], houseCost: 200, group: "green" },
             { id: 32, name: "Manchester", type: "property", color: "#16a34a", cost: 300, rent: [26, 130, 390, 900, 1100, 1275], houseCost: 200, group: "green" },
             { id: 33, name: "Community Chest", type: "chest", color: null, cost: null, rent: [0], group: "special" },
@@ -1831,7 +1905,59 @@
         ];
 
         const PLAYER_HUES = [140, 260, 20, 200, 320, 50];
-        const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
+        const DICE_FACES = ["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"]; // kept for reference; dice now render as CSS pips
+
+        let diceRollAnimTimer = null;
+        let lastRenderedDice = null;
+        let diceRollStartedAt = 0;
+        const MIN_DICE_ROLL_MS = 700;
+
+        function setDieFace(el, value, settle) {
+            if (!el) return;
+            el.dataset.value = Math.max(1, Math.min(6, value || 1));
+            if (settle) {
+                el.classList.remove("dice-settle");
+                void el.offsetWidth;
+                el.classList.add("dice-settle");
+            }
+        }
+
+        // Spins both dice through random faces while a roll is in flight,
+        // then settles on the real result once Firestore confirms it.
+        function startDiceRollAnimation() {
+            const d1 = document.getElementById("dice1");
+            const d2 = document.getElementById("dice2");
+            if (!d1 || !d2) return;
+            d1.classList.add("rolling");
+            d2.classList.add("rolling");
+            diceRollStartedAt = Date.now();
+            clearInterval(diceRollAnimTimer);
+            diceRollAnimTimer = setInterval(() => {
+                setDieFace(d1, Math.floor(Math.random() * 6) + 1, false);
+                setDieFace(d2, Math.floor(Math.random() * 6) + 1, false);
+            }, 90);
+        }
+
+        function stopDiceRollAnimation(finalD1, finalD2) {
+            const elapsed = Date.now() - diceRollStartedAt;
+            const remaining = Math.max(0, MIN_DICE_ROLL_MS - elapsed);
+            const finish = () => {
+                clearInterval(diceRollAnimTimer);
+                diceRollAnimTimer = null;
+                const d1 = document.getElementById("dice1");
+                const d2 = document.getElementById("dice2");
+                if (!d1 || !d2) return;
+                d1.classList.remove("rolling");
+                d2.classList.remove("rolling");
+                setDieFace(d1, finalD1, true);
+                setDieFace(d2, finalD2, true);
+            };
+            if (remaining > 0) {
+                setTimeout(finish, remaining);
+            } else {
+                finish();
+            }
+        }
         
         let currentRoomCode = null;
         let roomExpiryHeartbeat = null; // interval id — see startRoomExpiryHeartbeat()
@@ -1895,7 +2021,7 @@
             return (p?.name || '?').charAt(0).toUpperCase();
         }
 
-        const CORNER_ICONS = { 10: '➜', 0: '🔒', 30: '🏖️', 20: '🚔' };
+        const CORNER_ICONS = { 0: '➜', 10: '🔒', 20: '🏖️', 30: '🚔' };
 
         const SPACE_ICONS = {
             1: '🇧🇷', 3: '🇧🇷',                         // brown: Brazil
@@ -2285,8 +2411,11 @@
                 document.getElementById("chat-launcher").style.display = "flex";
                 
                 if (state.dice) {
-                    document.getElementById("dice1").textContent = DICE_FACES[(state.dice[0] - 1) || 0];
-                    document.getElementById("dice2").textContent = DICE_FACES[(state.dice[1] - 1) || 0];
+                    const diceKey = state.dice.join(",") + "|" + (state.activityLog?.length || 0);
+                    if (diceKey !== lastRenderedDice) {
+                        lastRenderedDice = diceKey;
+                        stopDiceRollAnimation(state.dice[0] || 1, state.dice[1] || 1);
+                    }
                 }
 
                 // Free Parking pot display
@@ -2422,19 +2551,95 @@
             });
         }
 
+        const tokenLastPos = {};
+        const tokenAnimLocks = {};
+
+        function ensureTokenEl(uid, index) {
+            let el = document.getElementById(`token-${uid}`);
+            if (!el) {
+                el = document.createElement("div");
+                el.id = `token-${uid}`;
+                el.className = "avatar-token";
+                el.style.backgroundColor = `hsl(${PLAYER_HUES[index % PLAYER_HUES.length]}, 70%, 50%)`;
+                el.textContent = uid === localUser.uid ? "⭐" : (index + 1);
+            }
+            return el;
+        }
+
+        function placeTokenAt(el, pos) {
+            const holder = document.getElementById(`tokens-space-${pos}`);
+            if (holder && el.parentElement !== holder) holder.appendChild(el);
+        }
+
+        function flashSpace(pos) {
+            const spaceEl = document.querySelector(`.board-space.space-${pos}`);
+            if (!spaceEl) return;
+            spaceEl.classList.remove("space-flash");
+            void spaceEl.offsetWidth;
+            spaceEl.classList.add("space-flash");
+        }
+
+        // Hops a token forward one tile at a time from its old position to
+        // its new one, rather than snapping straight there. Long jumps
+        // (card teleports, Go To Jail) are capped so the animation stays
+        // snappy instead of circling the whole board.
+        function hopToken(uid, el, fromPos, toPos) {
+            if (tokenAnimLocks[uid]) {
+                placeTokenAt(el, toPos);
+                tokenLastPos[uid] = toPos;
+                return;
+            }
+            let steps = (toPos - fromPos + 40) % 40;
+            if (steps === 0) { placeTokenAt(el, toPos); tokenLastPos[uid] = toPos; return; }
+
+            const maxAnimatedSteps = 12;
+            if (steps > maxAnimatedSteps) {
+                placeTokenAt(el, toPos);
+                el.classList.remove("token-hop");
+                void el.offsetWidth;
+                el.classList.add("token-hop");
+                flashSpace(toPos);
+                tokenLastPos[uid] = toPos;
+                return;
+            }
+
+            tokenAnimLocks[uid] = true;
+            let current = fromPos;
+            const stepDelay = 220;
+            const step = () => {
+                current = (current + 1) % 40;
+                placeTokenAt(el, current);
+                el.classList.remove("token-hop");
+                void el.offsetWidth;
+                el.classList.add("token-hop");
+                if (current === toPos) {
+                    flashSpace(toPos);
+                    tokenAnimLocks[uid] = false;
+                    tokenLastPos[uid] = toPos;
+                    return;
+                }
+                setTimeout(step, stepDelay);
+            };
+            step();
+        }
+
         function updateBoardTokens(state) {
-            document.querySelectorAll(".token-holder").forEach(h => h.innerHTML = "");
             const orders = state.playersOrder || [];
             orders.forEach((uid, index) => {
-                const pos = state.playerPositions?.[uid] ?? 0;
-                const holder = document.getElementById(`tokens-space-${pos}`);
-                if (holder) {
-                    const token = document.createElement("div");
-                    token.className = "avatar-token";
-                    token.style.backgroundColor = `hsl(${PLAYER_HUES[index % PLAYER_HUES.length]}, 70%, 50%)`;
-                    token.textContent = uid === localUser.uid ? "⭐" : (index + 1);
-                    holder.appendChild(token);
+                const newPos = state.playerPositions?.[uid] ?? 0;
+                const el = ensureTokenEl(uid, index);
+                const prevPos = tokenLastPos[uid];
+                if (prevPos === undefined || prevPos === newPos) {
+                    placeTokenAt(el, newPos);
+                    tokenLastPos[uid] = newPos;
+                } else {
+                    hopToken(uid, el, prevPos, newPos);
                 }
+            });
+            // Drop tokens for players no longer in the room (removed/kicked).
+            document.querySelectorAll(".avatar-token[id^='token-']").forEach(el => {
+                const uid = el.id.replace("token-", "");
+                if (!orders.includes(uid)) el.remove();
             });
         }
 
@@ -2779,6 +2984,7 @@
 
         async function handleDiceRollSequence() {
             if (!currentRoomCode || !cachedGameState) return;
+            startDiceRollAnimation();
 
             const d1 = Math.floor(Math.random() * 6) + 1;
             const d2 = Math.floor(Math.random() * 6) + 1;
@@ -3106,6 +3312,7 @@
 
         async function rollJailEscapeAttempt() {
             if (!currentRoomCode || !cachedGameState) return;
+            startDiceRollAnimation();
             const d1 = Math.floor(Math.random() * 6) + 1;
             const d2 = Math.floor(Math.random() * 6) + 1;
 
