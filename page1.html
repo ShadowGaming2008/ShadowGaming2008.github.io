@@ -163,23 +163,31 @@
             text-align: center;
             width: 100%;
             color: #dbe2ea;
-            line-height: 1.15;
+            line-height: 1.08;
             text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-            white-space: nowrap;
+            /* Wrap onto up to 2 lines instead of clipping with an ellipsis —
+               most property names are two words and were getting cut off
+               at this tile size with nowrap + ellipsis. */
+            white-space: normal;
             overflow: hidden;
-            text-overflow: ellipsis;
-            display: block;
+            text-overflow: clip;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            word-break: break-word;
             max-width: 100%;
+            padding: 0 1px;
+            font-size: 7px;
         }
         .space-flag-icon {
-            font-size: 11px;
+            font-size: 10px;
             line-height: 1;
             margin-bottom: 1px;
             filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
         }
         .space-price-label {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 7px;
+            font-size: 6.5px;
             color: #9585f8;
             margin-top: 1px;
             font-weight: 700;
@@ -382,37 +390,52 @@
         .owner-badge {
             position: absolute;
             top: 2px;
-            right: 2px;
+            left: 2px;
             width: 6px;
             height: 6px;
             border-radius: 55px;
-            box-shadow: 0 0 5px currentColor;
-            z-index: 6;
+            box-shadow: 0 0 5px currentColor, 0 0 0 1px rgba(0,0,0,0.4);
+            z-index: 9;
         }
+        /* Sided tiles: nudge below the color bar's edge so the badge never
+           sits half inside the color strip. */
+        .board-space.side-top    .owner-badge { top: calc(22% + 5px); }
+        .board-space.side-left   .owner-badge { left: calc(22% + 3px); }
 
         .house-indicator-row {
             display: flex;
-            gap: 2px;
+            gap: 1.5px;
             justify-content: center;
+            align-items: center;
             position: absolute;
-            top: 3px;
+            top: 2px;
             left: 0;
             right: 0;
-            z-index: 6;
+            z-index: 8;
+            pointer-events: none;
         }
+        /* Default (corner-adjacent / no color bar) tiles: dots sit at the
+           very top. Sided tiles need to clear the color-group bar, which
+           occupies ~22% of that edge, or the dots overlap it. */
+        .board-space.side-top    .house-indicator-row { top: calc(22% + 5px); }
+        .board-space.side-bottom .house-indicator-row { top: 2px; }
+        .board-space.side-left   .house-indicator-row { top: 2px; left: calc(22% + 2px); right: 2px; }
+        .board-space.side-right  .house-indicator-row { top: 2px; left: 2px; right: calc(22% + 2px); }
         .house-dot {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
+            flex-shrink: 0;
             background: linear-gradient(160deg, #4ade80, #16a34a);
-            border-radius: 2px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            border-radius: 1.5px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.35);
         }
         .hotel-dot {
-            width: 9px;
-            height: 8px;
+            width: 8px;
+            height: 7px;
+            flex-shrink: 0;
             background: linear-gradient(160deg, #f87171, #dc2626);
-            border-radius: 2px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.6);
+            border-radius: 1.5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.35);
         }
 
         /* ── Toasts (self-contained — this page doesn't share app.js's DOM) ── */
@@ -2925,6 +2948,8 @@
                 el.classList.remove("owned-space");
                 el.style.background = "";
                 el.style.borderColor = "";
+                el.style.boxShadow = "";
+                el.style.opacity = "";
             });
 
             const props = state.properties || {};
@@ -2943,22 +2968,27 @@
                     const badge = document.createElement("div");
                     badge.className = "owner-badge";
                     badge.style.color = `hsl(${hue}, 100%, 65%)`;
-                    badge.style.backgroundColor = `hsl(${hue}, 70%, 50%)`;
+                    badge.style.backgroundColor = `hsl(${hue}, 85%, 55%)`;
                     spaceCard.appendChild(badge);
 
-                    // Tint the whole tile with the owning player's dot colour
-                    // (a translucent wash over the normal dark tile background)
-                    // so ownership is readable at a glance across the board.
+                    // Mark ownership with a slim accent ring + a soft corner
+                    // wash — NOT a full-tile colour fill. A full fill made
+                    // every property in a colour-group look identical the
+                    // moment one of them sold (they already share the group
+                    // colour bar), which is the exact bug being fixed here.
+                    // This keeps per-property ownership readable without
+                    // erasing the group-colour identity of the tile.
                     spaceCard.classList.add("owned-space");
-                    spaceCard.style.background = `linear-gradient(160deg, hsla(${hue}, 70%, 45%, 0.45) 0%, hsla(${hue}, 70%, 25%, 0.45) 100%), linear-gradient(160deg, #1c2836 0%, #151f2b 100%)`;
-                    spaceCard.style.borderColor = `hsla(${hue}, 70%, 60%, 0.5)`;
+                    spaceCard.style.background = `radial-gradient(circle at 100% 0%, hsla(${hue}, 75%, 50%, 0.35) 0%, transparent 55%), linear-gradient(160deg, #1c2836 0%, #151f2b 100%)`;
+                    spaceCard.style.borderColor = `hsla(${hue}, 70%, 60%, 0.65)`;
+                    spaceCard.style.boxShadow = `inset 0 0 0 1.5px hsla(${hue}, 70%, 60%, 0.55)`;
 
                     const isMortgaged = !!state.propertyMortgaged?.[spaceId];
                     spaceCard.style.opacity = isMortgaged ? "0.45" : "";
                     if (isMortgaged) {
                         const mBadge = document.createElement("div");
                         mBadge.textContent = "M";
-                        mBadge.style.cssText = "position:absolute;bottom:2px;right:2px;font-size:8px;font-weight:800;color:#f59e0b;background:#0d1319;border-radius:3px;padding:0 2px;z-index:5;";
+                        mBadge.style.cssText = "position:absolute;bottom:2px;right:2px;font-size:8px;font-weight:800;color:#f59e0b;background:#0d1319;border-radius:3px;padding:0 2px;z-index:7;";
                         spaceCard.appendChild(mBadge);
                     }
                 }
