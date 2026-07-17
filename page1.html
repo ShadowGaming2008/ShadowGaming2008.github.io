@@ -1203,12 +1203,13 @@
     </div>
 
     <div id="propertyModal" class="hidden">
-        <div class="hub-panel w-full max-w-sm p-6 space-y-4">
+        <div class="hub-panel w-full max-w-sm p-6 space-y-4" style="max-height:85vh; overflow-y:auto;">
             <div class="flex items-center justify-between pb-3" style="border-bottom:1px solid var(--hub-border-soft);">
                 <h3 id="propModalTitle" class="font-display text-xl font-bold" style="color:var(--hub-text-bright);"></h3>
                 <button id="closePropertyModalBtn" class="text-xl font-bold w-8 h-8 flex items-center justify-center rounded-lg transition" style="color:var(--hub-muted);">✕</button>
             </div>
             <div id="propModalInfo" class="text-xs space-y-1.5" style="color:var(--hub-muted);"></div>
+            <div id="propModalRentTable" class="text-xs"></div>
             <div id="propModalActions" class="space-y-2 pt-1">
                 <button id="btnBuildHouse" class="hidden w-full py-2 bg-blue-600 hover:bg-blue-500 font-bold rounded-lg text-white text-xs"></button>
                 <button id="btnMortgage" class="hidden w-full py-2 bg-orange-700 hover:bg-orange-600 font-bold rounded-lg text-white text-xs"></button>
@@ -1217,6 +1218,7 @@
             </div>
         </div>
     </div>
+
 
     <div id="tradeModal" class="hidden">
         <div class="hub-panel w-full max-w-xl max-h-[90vh] overflow-y-auto p-6 space-y-5">
@@ -3174,53 +3176,52 @@
         // properties/players are in the game.
         function renderAssetsPanel(state) {
             const panel = document.getElementById("assetsPanel");
-            const orders = state.playersOrder || [];
             const props = state.properties || {};
+            const uid = localUser?.uid;
+            if (!uid) { panel.innerHTML = ''; return; }
 
-            panel.innerHTML = orders.map((uid, idx) => {
-                const isBankrupt = state.playerBankrupt?.[uid] || false;
-                if (isBankrupt) return '';
+            const isBankrupt = state.playerBankrupt?.[uid] || false;
+            if (isBankrupt) {
+                panel.innerHTML = `<div class="asset-empty-note">You're out of the game.</div>`;
+                return;
+            }
 
-                const profile = state.playerProfiles?.[uid];
-                const displayName = uid === localUser.uid ? 'You' : (profile?.name || 'Player');
-                const ownedIds = Object.keys(props).filter(sid => props[sid] === uid);
-                const goojfCount = state.playerGoojf?.[uid] || 0;
+            const ownedIds = Object.keys(props).filter(sid => props[sid] === uid);
+            const goojfCount = state.playerGoojf?.[uid] || 0;
 
-                const propRows = ownedIds.length === 0
-                    ? `<div class="asset-empty-note">No properties owned</div>`
-                    : ownedIds.map(sid => {
-                        const space = BOARD_DATA[parseInt(sid, 10)];
-                        const houses = state.propertyHouses?.[sid] || 0;
-                        const isMortgaged = !!state.propertyMortgaged?.[sid];
-                        let statusTag = '';
-                        if (isMortgaged) statusTag = `<span class="text-[9px] text-amber-400">MORTGAGED</span>`;
-                        else if (houses === 5) statusTag = `<span class="text-[9px] text-blue-400">HOTEL</span>`;
-                        else if (houses > 0) statusTag = `<span class="text-[9px] text-blue-300">${houses}🏠</span>`;
-                        return `
-                            <div class="asset-prop-row">
-                                <span class="flex items-center min-w-0 truncate" style="color:#e2e8f0;">
-                                    <span class="chip-dot" style="background:${space.color || '#64748b'};"></span>${space.name}
-                                </span>
-                                ${statusTag}
-                            </div>
-                        `;
-                    }).join('');
-
-                const goojfRow = goojfCount > 0
-                    ? `<div class="asset-goojf-row">🔓 ${goojfCount} Get Out of Jail Free card${goojfCount > 1 ? 's' : ''}</div>`
-                    : '';
-
-                return `
-                    <div class="asset-player-group">
-                        <div class="asset-player-header">
-                            <span style="color:hsl(${PLAYER_HUES[idx % 6]}, 80%, 65%);">${displayName}</span>
-                            <span>${ownedIds.length} propert${ownedIds.length === 1 ? 'y' : 'ies'}</span>
+            const propRows = ownedIds.length === 0
+                ? `<div class="asset-empty-note">No properties owned</div>`
+                : ownedIds.map(sid => {
+                    const space = BOARD_DATA[parseInt(sid, 10)];
+                    const houses = state.propertyHouses?.[sid] || 0;
+                    const isMortgaged = !!state.propertyMortgaged?.[sid];
+                    let statusTag = '';
+                    if (isMortgaged) statusTag = `<span class="text-[9px] text-amber-400">MORTGAGED</span>`;
+                    else if (houses === 5) statusTag = `<span class="text-[9px] text-blue-400">HOTEL</span>`;
+                    else if (houses > 0) statusTag = `<span class="text-[9px] text-blue-300">${houses}🏠</span>`;
+                    return `
+                        <div class="asset-prop-row">
+                            <span class="flex items-center min-w-0 truncate" style="color:#e2e8f0;">
+                                <span class="chip-dot" style="background:${space.color || '#64748b'};"></span>${space.name}
+                            </span>
+                            ${statusTag}
                         </div>
-                        ${propRows}
-                        ${goojfRow}
+                    `;
+                }).join('');
+
+            const goojfRow = goojfCount > 0
+                ? `<div class="asset-goojf-row">🔓 ${goojfCount} Get Out of Jail Free card${goojfCount > 1 ? 's' : ''}</div>`
+                : '';
+
+            panel.innerHTML = `
+                <div class="asset-player-group">
+                    <div class="asset-player-header">
+                        <span>${ownedIds.length} propert${ownedIds.length === 1 ? 'y' : 'ies'}</span>
                     </div>
-                `;
-            }).join('');
+                    ${propRows}
+                    ${goojfRow}
+                </div>
+            `;
         }
 
         // Computes rent owed for a space given full game state context.
@@ -3681,6 +3682,106 @@
         // ─────────────────────────────────────────────
         let selectedPropertySpaceId = null;
 
+        // Builds a compact rent-schedule / house-cost breakdown table shown
+        // inside the property modal so players can see exactly how much
+        // landing on this space would cost at every stage of development.
+        function buildRentDetailsHTML(space, state, currentHouses) {
+            if (space.type === "property") {
+                const rows = [
+                    { label: "Rent (no houses)", value: space.rent[0] },
+                    { label: "With 1 house", value: space.rent[1] },
+                    { label: "With 2 houses", value: space.rent[2] },
+                    { label: "With 3 houses", value: space.rent[3] },
+                    { label: "With 4 houses", value: space.rent[4] },
+                    { label: "With hotel", value: space.rent[5] },
+                ];
+                const sameGroupSpaces = BOARD_DATA.filter(s => s.group === space.group);
+                const owner = state.properties?.[space.id];
+                const ownsAll = owner && sameGroupSpaces.every(s => state.properties?.[s.id] === owner);
+                const monopolyNote = ownsAll && currentHouses === 0
+                    ? `<div class="text-[10px] mt-1" style="color:#34d399;">Monopoly owned — base rent doubled to $${space.rent[0] * 2}</div>`
+                    : '';
+
+                const rowsHTML = rows.map((r, i) => {
+                    const isCurrent = i === currentHouses;
+                    return `
+                        <div class="flex items-center justify-between py-0.5 ${isCurrent ? 'font-bold' : ''}" style="${isCurrent ? 'color:#7c6af5;' : ''}">
+                            <span>${r.label}${isCurrent ? ' (current)' : ''}</span>
+                            <span>$${r.value}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="rounded-lg p-3" style="background:var(--hub-panel-raised, rgba(255,255,255,0.03)); border:1px solid var(--hub-border-soft, rgba(255,255,255,0.08));">
+                        <div class="text-[10px] font-bold uppercase mb-1.5" style="color:var(--hub-muted);">Rent Schedule</div>
+                        ${rowsHTML}
+                        ${monopolyNote}
+                        <div class="flex items-center justify-between pt-2 mt-1.5" style="border-top:1px solid var(--hub-border-soft, rgba(255,255,255,0.08));">
+                            <span>House cost</span>
+                            <span>$${space.houseCost}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span>Mortgage value</span>
+                            <span>$${Math.floor(space.cost / 2)}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (space.type === "railroad") {
+                const rows = [
+                    { label: "1 airport owned", value: space.rent[0] },
+                    { label: "2 airports owned", value: space.rent[1] },
+                    { label: "3 airports owned", value: space.rent[2] },
+                    { label: "4 airports owned", value: space.rent[3] },
+                ];
+                const owner = state.properties?.[space.id];
+                const ownedCount = owner ? BOARD_DATA.filter(s => s.type === "railroad" && state.properties?.[s.id] === owner).length : 0;
+                const rowsHTML = rows.map((r, i) => {
+                    const isCurrent = owner && (i + 1) === ownedCount;
+                    return `
+                        <div class="flex items-center justify-between py-0.5 ${isCurrent ? 'font-bold' : ''}" style="${isCurrent ? 'color:#7c6af5;' : ''}">
+                            <span>${r.label}${isCurrent ? ' (current)' : ''}</span>
+                            <span>$${r.value}</span>
+                        </div>
+                    `;
+                }).join('');
+                return `
+                    <div class="rounded-lg p-3" style="background:var(--hub-panel-raised, rgba(255,255,255,0.03)); border:1px solid var(--hub-border-soft, rgba(255,255,255,0.08));">
+                        <div class="text-[10px] font-bold uppercase mb-1.5" style="color:var(--hub-muted);">Rent Schedule</div>
+                        ${rowsHTML}
+                        <div class="flex items-center justify-between pt-2 mt-1.5" style="border-top:1px solid var(--hub-border-soft, rgba(255,255,255,0.08));">
+                            <span>Mortgage value</span>
+                            <span>$${Math.floor(space.cost / 2)}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (space.type === "utility") {
+                return `
+                    <div class="rounded-lg p-3" style="background:var(--hub-panel-raised, rgba(255,255,255,0.03)); border:1px solid var(--hub-border-soft, rgba(255,255,255,0.08));">
+                        <div class="text-[10px] font-bold uppercase mb-1.5" style="color:var(--hub-muted);">Rent Schedule</div>
+                        <div class="flex items-center justify-between py-0.5">
+                            <span>1 utility owned</span>
+                            <span>4 × dice roll</span>
+                        </div>
+                        <div class="flex items-center justify-between py-0.5">
+                            <span>Both utilities owned</span>
+                            <span>10 × dice roll</span>
+                        </div>
+                        <div class="flex items-center justify-between pt-2 mt-1.5" style="border-top:1px solid var(--hub-border-soft, rgba(255,255,255,0.08));">
+                            <span>Mortgage value</span>
+                            <span>$${Math.floor(space.cost / 2)}</span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return '';
+        }
+
         function openPropertyModal(spaceId) {
             if (!cachedGameState) return;
             const space = BOARD_DATA[spaceId];
@@ -3693,7 +3794,7 @@
             const houses = state.propertyHouses?.[spaceId] || 0;
             const orders = state.playersOrder || [];
             const activePlayerUid = orders[state.turnIndex];
-            const isMyTurn = activePlayerUid === localUser.uid && state.turnPhase !== "roll" && !state.auction;
+            const isMyTurn = activePlayerUid === localUser.uid && !state.auction;
             const isMine = owner === localUser.uid;
 
             document.getElementById("propModalTitle").textContent = space.name;
@@ -3710,6 +3811,10 @@
                 infoLines.push(houses === 5 ? `Improvements: Hotel` : `Improvements: ${houses} house${houses > 1 ? 's' : ''}`);
             }
             document.getElementById("propModalInfo").innerHTML = infoLines.map(l => `<div>${l}</div>`).join('');
+
+            // ── Rent / house-cost details table ──
+            const rentTableEl = document.getElementById("propModalRentTable");
+            rentTableEl.innerHTML = buildRentDetailsHTML(space, state, houses);
 
             // ── Action buttons ──
             const buildBtn = document.getElementById("btnBuildHouse");
